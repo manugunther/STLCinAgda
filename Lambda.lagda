@@ -66,69 +66,92 @@ open import Data.Nat
 open import Data.String
 open import Data.List
 open import Data.Bool
-
-data ⊥ : Set where
-
-¬ : Set → Set
-¬ A = A → ⊥ 
-
-data _×_ (A : Set) (B : Set) : Set where
-  [_,_] : A → B → A × B
-
-fst : ∀ {A} {B} → A × B → A
-fst [ a , _ ] = a
+-- Para la equivalencia de tipos:
+open import Relation.Binary.Core
+-- Para el tipo Bottom y la negación de un tipo:
+open import Relation.Nullary
+-- Para las 2-uplas:
+open import Data.Product
 
 data Var : Set where
   var : String → Var
 
 data LambdaTerm : Set where
   id   : Var → LambdaTerm
-  abs : Var → LambdaTerm → LambdaTerm
+  abs  : Var → LambdaTerm → LambdaTerm
   app  : LambdaTerm → LambdaTerm → LambdaTerm
  
+
 data Type : Set where
   ⊙     : Type
   _⟼_  : Type → Type → Type
 
-
-data _≡_ : Var → Var → Set where
-  Refl : {x : Var} → x ≡ x
-  
-
-
 mutual
   data Ctx : Set where
     ø      : Ctx
-    _▷_｢_｣ : (t : Var × Type) → (π : Ctx) → EsLibre (fst t) π → Ctx
+    _▷_｢_｣ : (t : Var × Type) → (π : Ctx) → NotInCtx (proj₁ t) π → Ctx
 
-  data EsLibre : Var → Ctx → Set where
-    freeEmpty  : {x : Var} → EsLibre x ø
-    freeNEmpty : (x : Var) → (π : Ctx) → EsLibre x π →
-                 (x' : Var) → (p : EsLibre x' π) → 
-                 ¬ (x ≡ x') →
-                 EsLibre x ([ x' , _ ] ▷ π ｢ p ｣)
+  data NotInCtx : Var → Ctx → Set where
+    notInEmpty  : {x : Var} → NotInCtx x ø
+    notInNEmpty : {x' : Var} {θ : Type} (x : Var) → (π : Ctx) → NotInCtx x π →
+                  (p : NotInCtx x' π) → ¬ (x ≡ x') →
+                 NotInCtx x ((x' ,′ θ) ▷ π ｢ p ｣)
 
 data inCtx : Var × Type → Ctx → Set where
   inHead : (x : Var) → (θ : Type) → (π : Ctx) → 
-           (p : EsLibre x π) → inCtx [ x , θ ] ([ x , θ ] ▷ π ｢ p ｣)
+           (p : NotInCtx x π) → inCtx ( x  ,′ θ ) (( x  ,′ θ ) ▷ π ｢ p ｣)
   inTail : (x : Var) → (θ : Type) → (π : Ctx) → (x' : Var) → (θ' : Type) →
-           inCtx [ x , θ ] π → (p : EsLibre x' π) → 
-           inCtx [ x , θ ] ([ x' , θ' ] ▷ π ｢ p ｣)
+           inCtx ( x  ,′ θ ) π → (p : NotInCtx x' π) → 
+           inCtx ( x  ,′ θ ) (( x'  ,′ θ' ) ▷ π ｢ p ｣)
   
 
-data TypeJudgment : Set where
-  _⊢_∷_ : Ctx → LambdaTerm → Type → TypeJudgment
-
-data TypeDeriv : TypeJudgment → Set where
+data _⊢_∷_ : Ctx → LambdaTerm → Type → Set where
   tdvar : ∀ {x} {θ} {π} →
-          inCtx [ x , θ ] π → TypeDeriv (π ⊢ id x ∷ θ)
-  tdabs : ∀ {t} {x} {θ} {θ'} {π} → (p : EsLibre x π) →
-          TypeDeriv ([ x , θ ] ▷ π ｢ p ｣  ⊢ t ∷ θ') →
-          TypeDeriv (π ⊢ (abs x t) ∷ (θ ⟼ θ') )
+          inCtx ( x  ,′ θ ) π → (π ⊢ id x ∷ θ)
+  tdabs : ∀ {t} {x} {θ} {θ'} {π} → (p : NotInCtx x π) →
+          (( x  ,′ θ ) ▷ π ｢ p ｣  ⊢ t ∷ θ') →
+          (π ⊢ (abs x t) ∷ (θ ⟼ θ') )
   tdapp : ∀ {t₁} {t₂} {θ} {θ'} {π} →
-          TypeDeriv (π ⊢ t₁ ∷ (θ ⟼ θ')) →
-          TypeDeriv (π ⊢ t₂ ∷ θ) →
-          TypeDeriv (π ⊢ (app t₁ t₂) ∷ θ')
+          (π ⊢ t₁ ∷ (θ ⟼ θ')) →
+          (π ⊢ t₂ ∷ θ) →
+          (π ⊢ (app t₁ t₂) ∷ θ')
+
+
+π₁ : Ctx
+π₁ = ( ( (var "y") ,′ ⊙) ▷ ø ｢ notInEmpty ｣)
+
+xNotπ₁ : NotInCtx (var "x") π₁
+xNotπ₁ = notInNEmpty (var "x") ø notInEmpty notInEmpty aux
+  where aux : ¬ (var "x") ≡ (var "y")
+        aux ()
+
+ej1 : ( ( (var "x") ,′ ⊙) ▷ π₁ ｢ xNotπ₁ ｣) ⊢ (id (var "x")) ∷ ⊙
+ej1 = tdvar (inHead (var "x") ⊙ π₁ xNotπ₁)
+
+ej2 : π₁ ⊢ (abs (var "x") (id (var "x"))) ∷ (⊙ ⟼ ⊙)
+ej2 = tdabs xNotπ₁ ej1
+
+
+-- data CheckType : Ctx → LambdaTerm → Type → Set where
+--   check : 
+
+
+-- p' : {w : Var} {π : Ctx} (v : Var)  → NotInCtx w π →
+--      w ≡ v → NotInCtx v π
+-- p' {.v} v p refl = p
+
+-- infer : {θ : Type} → (π : Ctx) → (t : LambdaTerm) → (π ⊢ t ∷ θ)
+-- infer {θ} π' (id v) = tdvar (inHead v θ ((v ,′ θ) ▷ ∅ ｢notInEmpty v｣))
+
+
+  -- where
+  --   mkiCtx : (π : Ctx) → (v : Var) → (θ : Type) → inCtx ( v ,′ θ ) π
+  --   mkiCtx ( ( .v ,  .θ ) ▷ π ｢ p ｣) v θ = (inHead v θ π p)
+
+  --    else inTail (var v) θ π (var w) θ' (mkiCtx π (var v) θ) p
+
+
+
  \end{code}
 
  \end{document}

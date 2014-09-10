@@ -66,6 +66,7 @@ open import Data.Nat
 open import Data.String
 open import Data.List
 open import Data.Bool
+open import Data.Empty
 -- Para la equivalencia de tipos:
 open import Relation.Binary.Core
 -- Para el tipo Bottom y la negación de un tipo:
@@ -73,13 +74,14 @@ open import Relation.Nullary
 -- Para las 2-uplas:
 open import Data.Product
 
-data Var : Set where
-  var : String → Var
+Var : Set
+Var = String
+
 
 data LambdaTerm : Set where
-  id   : Var → LambdaTerm
-  abs  : Var → LambdaTerm → LambdaTerm
-  app  : LambdaTerm → LambdaTerm → LambdaTerm
+  ″_″  : Var → LambdaTerm
+  λ'_⟶_  : Var → LambdaTerm → LambdaTerm
+  _●_  : LambdaTerm → LambdaTerm → LambdaTerm
  
 
 data Type : Set where
@@ -89,47 +91,64 @@ data Type : Set where
 mutual
   data Ctx : Set where
     ø      : Ctx
-    _▷_｢_｣ : (t : Var × Type) → (π : Ctx) → NotInCtx (proj₁ t) π → Ctx
+    _▷_｢_｣ : (t : Var × Type) → (π : Ctx) → (proj₁ t) ∉ π → Ctx
 
-  data NotInCtx : Var → Ctx → Set where
-    notInEmpty  : {x : Var} → NotInCtx x ø
-    notInNEmpty : {x' : Var} {θ : Type} (x : Var) → (π : Ctx) → NotInCtx x π →
-                  (p : NotInCtx x' π) → ¬ (x ≡ x') →
-                 NotInCtx x ((x' ,′ θ) ▷ π ｢ p ｣)
+  data _∉_ : Var → Ctx → Set where
+    notInEmpty  : {x : Var} → x ∉ ø
+    notInNEmpty : {x' : Var} {θ : Type} (x : Var) → (π : Ctx) → x ∉ π →
+                  (p : x' ∉ π) → ¬ (x ≡ x') →
+                 x ∉ ((x' , θ) ▷ π ｢ p ｣)
 
-data inCtx : Var × Type → Ctx → Set where
-  inHead : (x : Var) → (θ : Type) → (π : Ctx) → 
-           (p : NotInCtx x π) → inCtx ( x  ,′ θ ) (( x  ,′ θ ) ▷ π ｢ p ｣)
+data _∈_ : Var × Type → Ctx → Set where
+  inHead : ∀ {y} → (x : Var) → (θ : Type) → (π : Ctx) → 
+           (p : y ∉ π) → x ≡ y → ( x  , θ ) ∈ (( y  , θ ) ▷ π ｢ p ｣)
   inTail : (x : Var) → (θ : Type) → (π : Ctx) → (x' : Var) → (θ' : Type) →
-           inCtx ( x  ,′ θ ) π → (p : NotInCtx x' π) → 
-           inCtx ( x  ,′ θ ) (( x'  ,′ θ' ) ▷ π ｢ p ｣)
+           ( x  , θ ) ∈ π → (p : x' ∉ π) → 
+           ( x  , θ ) ∈ (( x'  , θ' ) ▷ π ｢ p ｣)
   
 
 data _⊢_∷_ : Ctx → LambdaTerm → Type → Set where
   tdvar : ∀ {x} {θ} {π} →
-          inCtx ( x  ,′ θ ) π → (π ⊢ id x ∷ θ)
-  tdabs : ∀ {t} {x} {θ} {θ'} {π} → (p : NotInCtx x π) →
-          (( x  ,′ θ ) ▷ π ｢ p ｣  ⊢ t ∷ θ') →
-          (π ⊢ (abs x t) ∷ (θ ⟼ θ') )
+          ( x  ,′ θ ) ∈ π → (π ⊢ ″ x ″ ∷ θ)
+
+  tdabs : ∀ {t} {x} {θ} {θ'} {π} → 
+          (p : x ∉ π) → (( x  , θ ) ▷ π ｢ p ｣  ⊢ t ∷ θ') →
+          (π ⊢ (λ' x ⟶ t) ∷ (θ ⟼ θ') )
+
   tdapp : ∀ {t₁} {t₂} {θ} {θ'} {π} →
           (π ⊢ t₁ ∷ (θ ⟼ θ')) →
           (π ⊢ t₂ ∷ θ) →
-          (π ⊢ (app t₁ t₂) ∷ θ')
+          (π ⊢ (t₁ ● t₂) ∷ θ')
 
 
 π₁ : Ctx
-π₁ = ( ( (var "y") ,′ ⊙) ▷ ø ｢ notInEmpty ｣)
+π₁ = ( ( "y" ,′ ⊙) ▷ ø ｢ notInEmpty ｣)
 
-xNotπ₁ : NotInCtx (var "x") π₁
-xNotπ₁ = notInNEmpty (var "x") ø notInEmpty notInEmpty aux
-  where aux : ¬ (var "x") ≡ (var "y")
+xNotπ₁ : "x" ∉ π₁
+xNotπ₁ = notInNEmpty "x" ø notInEmpty notInEmpty aux
+  where aux : ¬ "x" ≡ "y"
         aux ()
 
-ej1 : ( ( (var "x") ,′ ⊙) ▷ π₁ ｢ xNotπ₁ ｣) ⊢ (id (var "x")) ∷ ⊙
-ej1 = tdvar (inHead (var "x") ⊙ π₁ xNotπ₁)
+tyId : ∀ {θ} → ø ⊢ λ' "x" ⟶ ″ "x" ″ ∷ (θ ⟼ θ)
+tyId {θ} = tdabs notInEmpty (tdvar (inHead "x" θ ø notInEmpty refl))
 
-ej2 : π₁ ⊢ (abs (var "x") (id (var "x"))) ∷ (⊙ ⟼ ⊙)
-ej2 = tdabs xNotπ₁ ej1
+
+-- IDEA 1
+-- Agregar un constructor a Juicio de Tipado que sea absurdo
+
+
+-- IDEA 2
+infer : Ctx → LambdaTerm → Set
+infer ø ″ "x" ″ = ⊥
+infer ø (λ' "x" ⟶ ″ "x" ″) = {θ : _} → ø ⊢ λ' "x" ⟶ ″ "x" ″ ∷ (θ ⟼ θ)
+infer π ″ v ″ = {!!}
+infer _ _ = {!!}
+
+-- ej1 : ( ( (var "x") ,′ ⊙) ▷ π₁ ｢ xNotπ₁ ｣) ⊢ (id (var "x")) ∷ ⊙
+-- ej1 = tdvar (inHead (var "x") ⊙ π₁ xNotπ₁)
+
+-- ej2 : π₁ ⊢ (abs (var "x") (id (var "x"))) ∷ (⊙ ⟼ ⊙)
+-- ej2 = tdabs xNotπ₁ ej1
 
 
 -- data CheckType : Ctx → LambdaTerm → Type → Set where

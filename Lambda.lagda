@@ -73,6 +73,8 @@ open import Relation.Binary.Core
 open import Relation.Nullary
 -- Para las 2-uplas:
 open import Data.Product
+open import Data.Sum
+open import Data.Unit
 
 Var : Set
 Var = String
@@ -120,6 +122,39 @@ data _⊢_∷_ : Ctx → LambdaTerm → Type → Set where
           (π ⊢ t₂ ∷ θ) →
           (π ⊢ (t₁ ● t₂) ∷ θ')
 
+-- IDEA 1
+-- Agregar un constructor a Juicio de Tipado que sea absurdo
+
+
+-- IDEA 2
+inferVar : Ctx → Var → Set
+inferVar ø v = ⊥
+inferVar ( (w , θ) ▷ π ｢ w∉π ｣ ) v with (w == v)
+... | true = ((w , θ) ▷ π ｢ w∉π ｣) ⊢ ″ v ″ ∷ θ
+... | false = inferVar π v
+
+v∉π? : (v : Var) → (π : Ctx) → (v ∉ π) ⊎ Unit
+v∉π? v ø = inj₁ notInEmpty
+v∉π? v ((w , θ) ▷ π ｢ w∉π ｣) with v ≟ w | v∉π? v π
+... | yes _  |     _     = inj₂ unit
+... |   _    | inj₂ unit = inj₂ unit
+... | no v≠w | inj₁ v∉π  = inj₁ (notInNEmpty v π v∉π w∉π v≠w) 
+
+infer : Ctx → LambdaTerm → Set
+infer π ″ v ″ = inferVar π v
+infer π (λ' v ⟶ t)  with v∈π? v π  
+... | inj₂ unit = ⊥
+... | inj₁ v∉π with infer ((v , θ₁) ▷ π ｢ v∉π ｣) t
+... | ⊥ = ⊥
+... | _ = ?
+
+infer ø (λ' "x" ⟶ ″ "x" ″) = {θ : _} → ø ⊢ λ' "x" ⟶ ″ "x" ″ ∷ (θ ⟼ θ)
+infer π ″ v ″ = {!!}
+infer _ _ = {!!}
+
+
+
+  
 
 π₁ : Ctx
 π₁ = ( ( "y" ,′ ⊙) ▷ ø ｢ notInEmpty ｣)
@@ -131,18 +166,6 @@ xNotπ₁ = notInNEmpty "x" ø notInEmpty notInEmpty aux
 
 tyId : ∀ {θ} → ø ⊢ λ' "x" ⟶ ″ "x" ″ ∷ (θ ⟼ θ)
 tyId {θ} = tdabs notInEmpty (tdvar (inHead "x" θ ø notInEmpty refl))
-
-
--- IDEA 1
--- Agregar un constructor a Juicio de Tipado que sea absurdo
-
-
--- IDEA 2
-infer : Ctx → LambdaTerm → Set
-infer ø ″ "x" ″ = ⊥
-infer ø (λ' "x" ⟶ ″ "x" ″) = {θ : _} → ø ⊢ λ' "x" ⟶ ″ "x" ″ ∷ (θ ⟼ θ)
-infer π ″ v ″ = {!!}
-infer _ _ = {!!}
 
 -- ej1 : ( ( (var "x") ,′ ⊙) ▷ π₁ ｢ xNotπ₁ ｣) ⊢ (id (var "x")) ∷ ⊙
 -- ej1 = tdvar (inHead (var "x") ⊙ π₁ xNotπ₁)

@@ -62,10 +62,10 @@ implementar el Cálculo Lambda con un sistema de tipos simple sin anotaciones.
 \begin{code}
 module Lambda where
 
-open import Data.Nat
+open import Data.Nat hiding (_≟_)
 open import Data.String
 open import Data.List
-open import Data.Bool
+open import Data.Bool hiding (_≟_)
 open import Data.Empty
 -- Para la equivalencia de tipos:
 open import Relation.Binary.Core
@@ -74,7 +74,7 @@ open import Relation.Nullary
 -- Para las 2-uplas:
 open import Data.Product
 open import Data.Sum
-open import Data.Unit
+open import Data.Unit hiding (_≟_)
 
 Var : Set
 Var = String
@@ -136,21 +136,29 @@ inferVar ( (w , θ) ▷ π ｢ w∉π ｣ ) v with (w == v)
 v∉π? : (v : Var) → (π : Ctx) → (v ∉ π) ⊎ Unit
 v∉π? v ø = inj₁ notInEmpty
 v∉π? v ((w , θ) ▷ π ｢ w∉π ｣) with v ≟ w | v∉π? v π
-... | yes _  |     _     = inj₂ unit
-... |   _    | inj₂ unit = inj₂ unit
 ... | no v≠w | inj₁ v∉π  = inj₁ (notInNEmpty v π v∉π w∉π v≠w) 
+... |    _   |     _     = inj₂ unit
 
-infer : Ctx → LambdaTerm → Set
-infer π ″ v ″ = inferVar π v
-infer π (λ' v ⟶ t)  with v∈π? v π  
+infer : List Type → Type → Ctx → LambdaTerm → Set
+infer _ _ π ″ v ″ = inferVar π v
+infer θs (θ₁ ⟼ θ₂) π (λ' v ⟶ t₀)  with v∉π? v π  
 ... | inj₂ unit = ⊥
-... | inj₁ v∉π with infer ((v , θ₁) ▷ π ｢ v∉π ｣) t
+... | inj₁ v∉π with infer θs θ₂ ((v , θ₁) ▷ π ｢ v∉π ｣) t₀
 ... | ⊥ = ⊥
-... | _ = ?
+-- ... | ((.v , .θ₁) ▷ .π ｢ .v∉π ｣) ⊢ .t₀ ∷ .θ₂ = ?
+infer (θ ∷ θs) θ' π (t₁ ● t₂) with infer θs (θ ⟼ θ') π t₁ | infer θs θ π t₂
+--infer (θ ∷ θs) θ' π (t₁ ● t₂) | π ⊢ t₁ ∷ (θ ⟼ θ') | _ = ?
+infer (θ ∷ θs) θ' π (t₁ ● t₂) | _ | _ = ⊥
+infer _ _ _ _ = ⊥
 
-infer ø (λ' "x" ⟶ ″ "x" ″) = {θ : _} → ø ⊢ λ' "x" ⟶ ″ "x" ″ ∷ (θ ⟼ θ)
-infer π ″ v ″ = {!!}
-infer _ _ = {!!}
+-- tdapp : ∀ {t₁} {t₂} {θ} {θ'} {π} →
+--          (π ⊢ t₁ ∷ (θ ⟼ θ')) →
+--          (π ⊢ t₂ ∷ θ) →
+--          (π ⊢ (t₁ ● t₂) ∷ θ')
+
+-- infer ø (λ' "x" ⟶ ″ "x" ″) = {θ : _} → ø ⊢ λ' "x" ⟶ ″ "x" ″ ∷ (θ ⟼ θ)
+-- infer π ″ v ″ = {!!}
+-- infer _ _ = {!!}
 
 
 

@@ -102,8 +102,8 @@ _≟ₜ_ : Decidable {A = Type} _≡_
 ⊙ ≟ₜ ⊙ = yes refl
 (θ₀ ⟼ θ₁) ≟ₜ (θ₂ ⟼ θ₃) with θ₀ ≟ₜ θ₂ | θ₁ ≟ₜ θ₃
 (θ₀ ⟼ θ₁) ≟ₜ (.θ₀ ⟼ .θ₁) | yes refl | yes refl = yes refl
-(θ₀ ⟼ θ₁) ≟ₜ (θ₂ ⟼ θ₃) | no prf | _ = no (prf ∘ cong fₜ)
-(θ₀ ⟼ θ₁) ≟ₜ (θ₂ ⟼ θ₃) | _ | no prf = no (prf ∘ cong sₜ)
+(θ₀ ⟼ θ₁) ≟ₜ (θ₂ ⟼ θ₃)   | no prf   | _        = no (prf ∘ cong fₜ)
+(θ₀ ⟼ θ₁) ≟ₜ (θ₂ ⟼ θ₃)   | _        | no prf   = no (prf ∘ cong sₜ)
 ⊙ ≟ₜ (θ₀ ⟼ θ₁) = no λ()
 (θ₀ ⟼ θ₁) ≟ₜ ⊙ = no λ()
 
@@ -182,10 +182,10 @@ infer' θs π (λ' v ⟶ t₀) (θ₀ ⟼ θ₁) with v∉π? v π
 infer' (θ₀ ∷ θ₁ ∷ θs) π (λ' v ⟶ t₀) θ with (θ₀ ⟼ θ₁) ≟ₜ θ 
 ... | yes θ≡ₜθ₀⟼θ₁ = subsType (infer' θs π (λ' v ⟶ t₀) (θ₀ ⟼ θ₁)) θ≡ₜθ₀⟼θ₁
 ... | no _         = inj₂ unit
-infer' (θ' ∷ θs) π (t₁ ● t₂) θ with infer' θs π t₁ (θ' ⟼ θ) | infer' θs π t₂ (θ' ⟼ θ)
+infer' (θ' ∷ θs) π (t₁ ● t₂) θ with infer' θs π t₁ (θ' ⟼ θ) | infer' θs π t₂ θ'
 ... | inj₂ _ | _ = inj₂ unit
 ... | _ | inj₂ _ = inj₂ unit
-... | inj₁ y | inj₁ y₁ = {!!}
+... | inj₁ π⊢ₛt₁∷θ'⟼θ | inj₁ π⊢ₛt₂∷θ' = inj₁ (π⊢ₛt₁∷θ'⟼θ ∧ π⊢ₛt₂∷θ' ∣ₐ)
 infer' _ _ _ _ = inj₂ unit
 
 -- IDEA 2

@@ -69,26 +69,43 @@ open import Data.Bool hiding (_≟_)
 open import Data.Empty
 -- Para la equivalencia de tipos:
 open import Relation.Binary.Core
+open import Relation.Binary.PropositionalEquality
 -- Para el tipo Bottom y la negación de un tipo:
 open import Relation.Nullary
 -- Para las 2-uplas:
 open import Data.Product
 open import Data.Sum
 open import Data.Unit hiding (_≟_)
+open import Function
 
 Var : Set
 Var = String
-
 
 data LambdaTerm : Set where
   ″_″  : Var → LambdaTerm
   λ'_⟶_  : Var → LambdaTerm → LambdaTerm
   _●_  : LambdaTerm → LambdaTerm → LambdaTerm
  
-
 data Type : Set where
   ⊙     : Type
   _⟼_  : Type → Type → Type
+
+fₜ : Type → Type
+fₜ (θ₀ ⟼ θ₁) = θ₀
+fₜ _ = {!!}
+
+sₜ : Type → Type
+sₜ (θ₀ ⟼ θ₁) = θ₁
+sₜ _ = {!!}
+
+_≟ₜ_ : Decidable {A = Type} _≡_
+⊙ ≟ₜ ⊙ = yes refl
+(θ₀ ⟼ θ₁) ≟ₜ (θ₂ ⟼ θ₃) with θ₀ ≟ₜ θ₂ | θ₁ ≟ₜ θ₃
+(θ₀ ⟼ θ₁) ≟ₜ (.θ₀ ⟼ .θ₁) | yes refl | yes refl = yes refl
+(θ₀ ⟼ θ₁) ≟ₜ (θ₂ ⟼ θ₃) | no prf | _ = no (prf ∘ cong fₜ)
+(θ₀ ⟼ θ₁) ≟ₜ (θ₂ ⟼ θ₃) | _ | no prf = no (prf ∘ cong sₜ)
+⊙ ≟ₜ (θ₀ ⟼ θ₁) = no λ()
+(θ₀ ⟼ θ₁) ≟ₜ ⊙ = no λ()
 
 mutual
   data Ctx : Set where
@@ -102,29 +119,74 @@ mutual
                  x ∉ ((x' , θ) ▷ π ｢ p ｣)
 
 data _∈_ : Var × Type → Ctx → Set where
-  inHead : ∀ {y} → (x : Var) → (θ : Type) → (π : Ctx) → 
-           (p : y ∉ π) → x ≡ y → ( x  , θ ) ∈ (( y  , θ ) ▷ π ｢ p ｣)
+  inHead : ∀ {y} {θ'} → (x : Var) → (θ : Type) → (π : Ctx) → 
+           (p : y ∉ π) → x ≡ y → θ ≡ θ' → ( x  , θ ) ∈ (( y  , θ' ) ▷ π ｢ p ｣)
   inTail : (x : Var) → (θ : Type) → (π : Ctx) → (x' : Var) → (θ' : Type) →
            ( x  , θ ) ∈ π → (p : x' ∉ π) → 
            ( x  , θ ) ∈ (( x'  , θ' ) ▷ π ｢ p ｣)
   
 
-data _⊢_∷_ : Ctx → LambdaTerm → Type → Set where
-  tdvar : ∀ {x} {θ} {π} →
-          ( x  ,′ θ ) ∈ π → (π ⊢ ″ x ″ ∷ θ)
+data _⊢ₛ_∷_ : Ctx → LambdaTerm → Type → Set where
+  _∣ᵥ : ∀ {x} {θ} {π} →
+          ( x  ,′ θ ) ∈ π → (π ⊢ₛ ″ x ″ ∷ θ)
 
-  tdabs : ∀ {t} {x} {θ} {θ'} {π} → 
-          (p : x ∉ π) → (( x  , θ ) ▷ π ｢ p ｣  ⊢ t ∷ θ') →
-          (π ⊢ (λ' x ⟶ t) ∷ (θ ⟼ θ') )
+  _∣ₗ : ∀ {t} {x} {θ} {θ'} {π} → {p : x ∉ π} → 
+          (( x  , θ ) ▷ π ｢ p ｣  ⊢ₛ t ∷ θ') →
+          (π ⊢ₛ (λ' x ⟶ t) ∷ (θ ⟼ θ') )
 
-  tdapp : ∀ {t₁} {t₂} {θ} {θ'} {π} →
-          (π ⊢ t₁ ∷ (θ ⟼ θ')) →
-          (π ⊢ t₂ ∷ θ) →
-          (π ⊢ (t₁ ● t₂) ∷ θ')
+  _∧_∣ₐ : ∀ {t₁} {t₂} {θ} {θ'} {π} →
+          (π ⊢ₛ t₁ ∷ (θ ⟼ θ')) →
+          (π ⊢ₛ t₂ ∷ θ) →
+          (π ⊢ₛ (t₁ ● t₂) ∷ θ')
 
 -- IDEA 1
 -- Agregar un constructor a Juicio de Tipado que sea absurdo
+-- Al final parece que no hizo falta agregar un "constructor absurdo"
+-- En cambio usamos ⊎.
 
+_⊢_∷_ : Ctx → LambdaTerm → Type → Set
+π ⊢ t ∷ θ = π ⊢ₛ t ∷ θ ⊎ Unit
+
+v∈π? : (v : Var) → (θ : Type) → (π : Ctx) → (v , θ) ∈ π ⊎ Unit
+v∈π? _ _ ø = inj₂ unit
+v∈π? v θᵥ ((w , θ) ▷ π ｢ w∉π ｣) with v ≟ w | θᵥ ≟ₜ θ
+... | yes v≡w | yes θᵥ≡θ = inj₁ (inHead v θᵥ π w∉π v≡w θᵥ≡θ)
+... | _ | _ with v∈π? v θᵥ π
+v∈π? v θᵥ ((w , θ) ▷ π ｢ w∉π ｣) | _ | _ | inj₁ v∈π = 
+                                          inj₁ (inTail v θᵥ π w θ v∈π w∉π)
+v∈π? v θᵥ ((w , θ) ▷ π ｢ w∉π ｣) | _ | _ | inj₂ _ = inj₂ unit
+
+v∉π? : (v : Var) → (π : Ctx) → v ∉ π ⊎ Unit
+v∉π? v ø = inj₁ notInEmpty
+v∉π? v ((w , θ) ▷ π ｢ w∉π ｣) with v ≟ w | v∉π? v π
+... | no v≠w | inj₁ v∉π  = inj₁ (notInNEmpty v π v∉π w∉π v≠w) 
+... |    _   |     _     = inj₂ unit
+
+inferVar' : (π : Ctx) → (v : Var) → (θ : Type) → π ⊢ ″ v ″ ∷ θ
+inferVar' ø _ _ = inj₂ unit
+inferVar' π v θ with v∈π? v θ π
+inferVar' π v θ | inj₁ v∈π = inj₁ (v∈π ∣ᵥ)
+inferVar' π v θ | inj₂ _ = inj₂ unit
+
+subsType : {π : Ctx} {t : LambdaTerm} {θ θ' : Type} →
+          π ⊢ t ∷ θ → θ ≡ θ' → π ⊢ t ∷ θ'
+subsType π⊢t∷Θ refl = π⊢t∷Θ
+
+infer' : List Type → (π : Ctx) → (t : LambdaTerm) → (θ : Type) → π ⊢ t ∷ θ
+infer' θs π ″ v ″ θ = inferVar' π v θ
+infer' θs π (λ' v ⟶ t₀) (θ₀ ⟼ θ₁) with v∉π? v π
+... | inj₂ _ = inj₂ unit
+... | inj₁ v∉π with infer' θs ((v , θ₀) ▷ π ｢ v∉π ｣) t₀ θ₁
+... | inj₁ πᵥ⊢ₛt₀∷θ₁ = inj₁ (πᵥ⊢ₛt₀∷θ₁ ∣ₗ)
+... | inj₂ _ = inj₂ unit
+infer' (θ₀ ∷ θ₁ ∷ θs) π (λ' v ⟶ t₀) θ with (θ₀ ⟼ θ₁) ≟ₜ θ 
+... | yes θ≡ₜθ₀⟼θ₁ = subsType (infer' θs π (λ' v ⟶ t₀) (θ₀ ⟼ θ₁)) θ≡ₜθ₀⟼θ₁
+... | no _         = inj₂ unit
+infer' (θ' ∷ θs) π (t₁ ● t₂) θ with infer' θs π t₁ (θ' ⟼ θ) | infer' θs π t₂ (θ' ⟼ θ)
+... | inj₂ _ | _ = inj₂ unit
+... | _ | inj₂ _ = inj₂ unit
+... | inj₁ y | inj₁ y₁ = {!!}
+infer' _ _ _ _ = inj₂ unit
 
 -- IDEA 2
 inferVar : Ctx → Var → Set
@@ -132,12 +194,6 @@ inferVar ø v = ⊥
 inferVar ( (w , θ) ▷ π ｢ w∉π ｣ ) v with (w == v)
 ... | true = ((w , θ) ▷ π ｢ w∉π ｣) ⊢ ″ v ″ ∷ θ
 ... | false = inferVar π v
-
-v∉π? : (v : Var) → (π : Ctx) → (v ∉ π) ⊎ Unit
-v∉π? v ø = inj₁ notInEmpty
-v∉π? v ((w , θ) ▷ π ｢ w∉π ｣) with v ≟ w | v∉π? v π
-... | no v≠w | inj₁ v∉π  = inj₁ (notInNEmpty v π v∉π w∉π v≠w) 
-... |    _   |     _     = inj₂ unit
 
 infer : List Type → Type → Ctx → LambdaTerm → Set
 infer _ _ π ″ v ″ = inferVar π v
@@ -172,8 +228,8 @@ xNotπ₁ = notInNEmpty "x" ø notInEmpty notInEmpty aux
   where aux : ¬ "x" ≡ "y"
         aux ()
 
-tyId : ∀ {θ} → ø ⊢ λ' "x" ⟶ ″ "x" ″ ∷ (θ ⟼ θ)
-tyId {θ} = tdabs notInEmpty (tdvar (inHead "x" θ ø notInEmpty refl))
+-- tyId : ∀ {θ} → ø ⊢ λ' "x" ⟶ ″ "x" ″ ∷ (θ ⟼ θ)
+-- tyId {θ} = inHead "x" θ ø notInEmpty refl ∣ᵥ ∣
 
 -- ej1 : ( ( (var "x") ,′ ⊙) ▷ π₁ ｢ xNotπ₁ ｣) ⊢ (id (var "x")) ∷ ⊙
 -- ej1 = tdvar (inHead (var "x") ⊙ π₁ xNotπ₁)

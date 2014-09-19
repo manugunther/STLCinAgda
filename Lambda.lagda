@@ -86,9 +86,13 @@ data LambdaTerm : Set where
   λ'_⟶_  : Var → LambdaTerm → LambdaTerm
   _●_  : LambdaTerm → LambdaTerm → LambdaTerm
  
+infixl 100 _●_
+
 data Type : Set where
   ⊙     : Type
   _⟼_  : Type → Type → Type
+
+infixr 100 _⟼_
 
 fₜ : Type → Type
 fₜ (θ₀ ⟼ θ₁) = θ₀
@@ -172,21 +176,105 @@ subsType : {π : Ctx} {t : LambdaTerm} {θ θ' : Type} →
           π ⊢ t ∷ θ → θ ≡ θ' → π ⊢ t ∷ θ'
 subsType π⊢t∷Θ refl = π⊢t∷Θ
 
-infer' : List Type → (π : Ctx) → (t : LambdaTerm) → (θ : Type) → π ⊢ t ∷ θ
-infer' θs π ″ v ″ θ = inferVar' π v θ
-infer' θs π (λ' v ⟶ t₀) (θ₀ ⟼ θ₁) with v∉π? v π
+infer' : {θ : Type} → List Type → (π : Ctx) → (t : LambdaTerm) → π ⊢ t ∷ θ
+infer' {θ} θs π ″ v ″ = inferVar' π v θ
+infer' {(θ₀ ⟼ θ₁)} θs π (λ' v ⟶ t₀)  with v∉π? v π
 ... | inj₂ _ = inj₂ unit
-... | inj₁ v∉π with infer' θs ((v , θ₀) ▷ π ｢ v∉π ｣) t₀ θ₁
+... | inj₁ v∉π with infer' {θ₁} θs ((v , θ₀) ▷ π ｢ v∉π ｣) t₀ 
 ... | inj₁ πᵥ⊢ₛt₀∷θ₁ = inj₁ (πᵥ⊢ₛt₀∷θ₁ ∣ₗ)
 ... | inj₂ _ = inj₂ unit
-infer' (θ₀ ∷ θ₁ ∷ θs) π (λ' v ⟶ t₀) θ with (θ₀ ⟼ θ₁) ≟ₜ θ 
-... | yes θ≡ₜθ₀⟼θ₁ = subsType (infer' θs π (λ' v ⟶ t₀) (θ₀ ⟼ θ₁)) θ≡ₜθ₀⟼θ₁
+infer' {θ} (θ₀ ∷ θ₁ ∷ θs) π (λ' v ⟶ t₀) with (θ₀ ⟼ θ₁) ≟ₜ θ
+... | yes θ≡ₜθ₀⟼θ₁ = subsType (infer' {(θ₀ ⟼ θ₁)} θs π (λ' v ⟶ t₀) ) θ≡ₜθ₀⟼θ₁
 ... | no _         = inj₂ unit
-infer' (θ' ∷ θs) π (t₁ ● t₂) θ with infer' θs π t₁ (θ' ⟼ θ) | infer' θs π t₂ θ'
+infer' {θ} (θ' ∷ θs) π (t₁ ● t₂)  with infer' {(θ' ⟼ θ)} θs π t₁  | infer' {θ'} θs π t₂ 
 ... | inj₂ _ | _ = inj₂ unit
 ... | _ | inj₂ _ = inj₂ unit
 ... | inj₁ π⊢ₛt₁∷θ'⟼θ | inj₁ π⊢ₛt₂∷θ' = inj₁ (π⊢ₛt₁∷θ'⟼θ ∧ π⊢ₛt₂∷θ' ∣ₐ)
-infer' _ _ _ _ = inj₂ unit
+infer' _ _ _ = inj₂ unit
+
+-- ################# Test ########################
+
+getType : {π : Ctx} {t : LambdaTerm} {θ : Type} → (π ⊢ t ∷ θ) → Type
+getType {θ = θ} (inj₁ x) = θ
+getType (inj₂ y) = {! no se que poner aca :)!}
+
+θ : Type
+θ = (⊙ ⟼ ⊙) ⟼ ⊙ ⟼ ⊙
+
+twice : LambdaTerm
+twice = λ' "f" ⟶ λ' "x" ⟶ ″ "f" ″ ● (″ "f" ″ ● ″ "x" ″)
+
+-- No anda
+dtwice : LambdaTerm
+dtwice = twice ● twice
+
+-- No anda
+thrice : LambdaTerm
+thrice = λ' "f" ⟶ λ' "x" ⟶ ″ "f" ″ ● (″ "f" ″ ● (″ "f" ″ ● ″ "x" ″))
+
+θ₁ : Type
+θ₁ = ⊙ ⟼ ⊙ ⟼ ⊙
+
+t₁ : LambdaTerm
+t₁ = λ' "f" ⟶ λ' "x" ⟶ ″ "x" ″
+
+θ₂ : Type
+θ₂ = (⊙ ⟼ ⊙) ⟼ (⊙ ⟼ ⊙) ⟼ ⊙ ⟼ ⊙
+
+t₂ : LambdaTerm
+t₂ = λ' "g" ⟶ λ' "f" ⟶ λ' "x" ⟶ ″ "g" ″ ● (″ "f" ″ ● ″ "x" ″)
+
+θ₃ : Type
+θ₃ = (⊙ ⟼ ⊙) ⟼ (⊙ ⟼ ⊙ ⟼ ⊙) ⟼ ⊙ ⟼ ⊙
+
+t₃ : LambdaTerm
+t₃ = λ' "x" ⟶ λ' "f" ⟶ λ' "g" ⟶ ″ "f" ″ ● ″ "g" ″ ● (″ "x" ″ ● ″ "g" ″)
+
+-- No anda
+θ₄ : Type
+θ₄ = ((⊙ ⟼ ⊙ ⟼ ⊙) ⟼ ⊙) 
+         ⟼ ((⊙ ⟼ ⊙ ⟼ ⊙) ⟼ ((⊙ ⟼ ⊙ ⟼ ⊙)  ⟼ ⊙) ⟼ ⊙)
+         ⟼ (⊙ ⟼ ⊙ ⟼ ⊙)
+         ⟼ ⊙
+
+t₄ : LambdaTerm
+t₄ = λ' "x" ⟶ 
+     λ' "y" ⟶ 
+     λ' "f" ⟶ 
+            ″ "f" ″
+                  ● (″ "x" ″ ● (λ' "w" ⟶ ″ "f" ″ ● ″ "w" ″))
+                  ● (″ "y" ″ ● ″ "f" ″ ● ″ "x" ″)
+
+Δ : LambdaTerm
+Δ = λ' "x" ⟶ ″ "x" ″ ● ″ "x" ″
+
+ΔΔ : LambdaTerm
+ΔΔ = Δ ● Δ
+
+-- inj₁
+-- ((((inTail "f" (⊙ ⟼ ⊙) (("f" , ⊙ ⟼ ⊙) ▷ ø ｢ notInEmpty ｣) "x" ⊙
+--     (inHead "f" (⊙ ⟼ ⊙) ø notInEmpty refl refl)
+--     (notInNEmpty "x" ø notInEmpty notInEmpty
+--      (.Data.String._.whatever "x" "f"))
+--     ∣ᵥ)
+--    ∧
+--    (inTail "f" (⊙ ⟼ ⊙) (("f" , ⊙ ⟼ ⊙) ▷ ø ｢ notInEmpty ｣) "x" ⊙
+--     (inHead "f" (⊙ ⟼ ⊙) ø notInEmpty refl refl)
+--     (notInNEmpty "x" ø notInEmpty notInEmpty
+--      (.Data.String._.whatever "x" "f"))
+--     ∣ᵥ)
+--    ∧
+--    inHead "x" ⊙ (("f" , ⊙ ⟼ ⊙) ▷ ø ｢ notInEmpty ｣)
+--    (notInNEmpty "x" ø notInEmpty notInEmpty
+--     (.Data.String._.whatever "x" "f"))
+--    refl refl
+--    ∣ᵥ
+--    ∣ₐ
+--    ∣ₐ)
+--   ∣ₗ)
+--  ∣ₗ)
+
+-- ###############################################
 
 -- IDEA 2
 inferVar : Ctx → Var → Set

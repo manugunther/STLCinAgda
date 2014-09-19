@@ -8,6 +8,7 @@
  \usepackage{amssymb}
  \usepackage{bbm}
  \usepackage[greek,english]{babel}
+ \usepackage{amsmath}
 
  % This handles the translation of unicode to latex:
 
@@ -15,10 +16,13 @@
  \usepackage[utf8x]{inputenc}
  \usepackage{autofe}
 
+ 
+ 
  % Some characters that are not automatically defined
  % (you figure out by the latex compilation errors you get),
  % and you need to define:
 
+ 
  \DeclareUnicodeCharacter{8988}{\ensuremath{\ulcorner}}
  \DeclareUnicodeCharacter{8989}{\ensuremath{\urcorner}}
  \DeclareUnicodeCharacter{8803}{\ensuremath{\overline{\equiv}}}
@@ -29,6 +33,16 @@
  \DeclareUnicodeCharacter{8759}{\ensuremath{\colon}}
  \DeclareUnicodeCharacter{952}{\ensuremath{\theta}}
  \DeclareUnicodeCharacter{960}{\ensuremath{\pi}}
+ \DeclareUnicodeCharacter{955}{\ensuremath{\lambda}}
+ \DeclareUnicodeCharacter{10230}{\ensuremath{\longrightarrow}}
+ \DeclareUnicodeCharacter{9679}{\ensuremath{\bullet}}
+ \DeclareUnicodeCharacter{8348}{\ensuremath{_t}}
+ \DeclareUnicodeCharacter{8799}{\ensuremath{\overset{?}{=}}}
+ \DeclareUnicodeCharacter{8347}{\ensuremath{_s}}
+ \DeclareUnicodeCharacter{7525}{\ensuremath{_v}}
+ \DeclareUnicodeCharacter{8343}{\ensuremath{_l}}
+ \DeclareUnicodeCharacter{8336}{\ensuremath{_a}}
+ 
 
  % Add more as you need them (shouldn’t happen often).
 
@@ -46,7 +60,8 @@
 \title{Implementación de Cálculo Lambda simplemente tipado en Agda}
 
  \begin{document}
-
+ 
+ 
 \maketitle
 
 
@@ -57,7 +72,9 @@ Para aprender a programar con tipos dependientes en Agda nos propusimos
 implementar el Cálculo Lambda con un sistema de tipos simple sin anotaciones.
 
 
+\section{Implementación}
 
+Para la implementación utilizaremos varias librerías de Agda:
 
 \begin{code}
 module Lambda where
@@ -78,15 +95,30 @@ open import Data.Sum
 open import Data.Unit hiding (_≟_)
 open import Function
 
+\end{code}
+
+
+Un término del cálculo Lambda podrá ser un identificador (el cual consta de una variable), una abstracción (que consta de una variable y un término) o una aplicación (dos términos).
+
+\begin{code}
+
+
 Var : Set
 Var = String
 
 data LambdaTerm : Set where
-  ″_″  : Var → LambdaTerm
-  λ'_⟶_  : Var → LambdaTerm → LambdaTerm
-  _●_  : LambdaTerm → LambdaTerm → LambdaTerm
+  ″_″     : Var → LambdaTerm
+  λ'_⟶_   : Var → LambdaTerm → LambdaTerm
+  _●_     : LambdaTerm → LambdaTerm → LambdaTerm
  
 infixl 100 _●_
+
+\end{code}
+
+Como primera aproximación a lo deseado, implementaremos tipos sin variables. Un Tipo podrá ser el "unit" o uno conformado por dos tipos el cual representará a las funciones:
+
+\begin{code}
+
 
 data Type : Set where
   ⊙     : Type
@@ -102,7 +134,15 @@ sₜ : Type → Type
 sₜ (θ₀ ⟼ θ₁) = θ₁
 sₜ _ = {!!}
 
-_≟ₜ_ : Decidable {A = Type} _≡_
+\end{code}
+
+
+Necesitaremos saber si dos tipos son iguales. Para eso definimos una función que dados dos tipos retorna si son o no iguales. El tipo de retorno es Decidable, el cual dada una expresión puede "decidir" si cumple alguna propiedad. En nuestro caso la propiedad es la igualdad proposicional:
+
+\begin{code}
+
+
+_≟ₜ_ : Decidable  _≡_
 ⊙ ≟ₜ ⊙ = yes refl
 (θ₀ ⟼ θ₁) ≟ₜ (θ₂ ⟼ θ₃) with θ₀ ≟ₜ θ₂ | θ₁ ≟ₜ θ₃
 (θ₀ ⟼ θ₁) ≟ₜ (.θ₀ ⟼ .θ₁) | yes refl | yes refl = yes refl
@@ -110,6 +150,14 @@ _≟ₜ_ : Decidable {A = Type} _≡_
 (θ₀ ⟼ θ₁) ≟ₜ (θ₂ ⟼ θ₃)   | _        | no prf   = no (prf ∘ cong sₜ)
 ⊙ ≟ₜ (θ₀ ⟼ θ₁) = no λ()
 (θ₀ ⟼ θ₁) ≟ₜ ⊙ = no λ()
+
+\end{code}
+
+Para inferir el tipo de un término necesitamos asignarle tipos a las variables libres que ocurren en el mismo. Para esto definimos un "contexto", el cual puede ser vacío o puede consistir de agregar un par (variable,tipo) a otro contexto. 
+
+Cada variable puede aparecer solo una vez en el contexto (sólo puede tener un tipo), por lo tanto al agregar una variable $x$ con algún tipo al contexto $π$, pediremos también una "prueba" de que $x$ no está en el contexto. Estas "pruebas" las implementamos mediante un tipo de dato que representa justamente lo que queremos: Dada una variable y un contexto, o bien la variable no se encuentra en el contexto porque este es vacío, o bien la variable no se encuentra porque es distinta a la primera que ocurre y tampoco ocurre en el resto del contexto:
+
+\begin{code}
 
 mutual
   data Ctx : Set where
@@ -122,12 +170,19 @@ mutual
                   (p : x' ∉ π) → ¬ (x ≡ x') →
                  x ∉ ((x' , θ) ▷ π ｢ p ｣)
 
+\end{code}
+
+También necesitaremos expresar cuando una variable con un tipo sí pertenece a un contexto. Para esto definimos otro tipo de dato. Un par (variable,tipo) puede estar en la "cabeza" de un contexto, o en la "cola".
+
+\begin{code}
+
 data _∈_ : Var × Type → Ctx → Set where
   inHead : ∀ {y} {θ'} → (x : Var) → (θ : Type) → (π : Ctx) → 
-           (p : y ∉ π) → x ≡ y → θ ≡ θ' → ( x  , θ ) ∈ (( y  , θ' ) ▷ π ｢ p ｣)
-  inTail : (x : Var) → (θ : Type) → (π : Ctx) → (x' : Var) → (θ' : Type) →
-           ( x  , θ ) ∈ π → (p : x' ∉ π) → 
-           ( x  , θ ) ∈ (( x'  , θ' ) ▷ π ｢ p ｣)
+           (p : y ∉ π) → x ≡ y → θ ≡ θ' → 
+                         ( x  , θ ) ∈ (( y  , θ' ) ▷ π ｢ p ｣)
+  inTail : (x : Var) → (θ : Type) → (π : Ctx) → (x' : Var) → 
+           (θ' : Type) → ( x  , θ ) ∈ π → (p : x' ∉ π) → 
+                       ( x  , θ ) ∈ (( x'  , θ' ) ▷ π ｢ p ｣)
   
 
 data _⊢ₛ_∷_ : Ctx → LambdaTerm → Type → Set where
@@ -175,6 +230,11 @@ inferVar' π v θ | inj₂ _ = inj₂ unit
 subsType : {π : Ctx} {t : LambdaTerm} {θ θ' : Type} →
           π ⊢ t ∷ θ → θ ≡ θ' → π ⊢ t ∷ θ'
 subsType π⊢t∷Θ refl = π⊢t∷Θ
+
+Error : Set
+Error = String
+
+
 
 infer' : {θ : Type} → List Type → (π : Ctx) → (t : LambdaTerm) → π ⊢ t ∷ θ
 infer' {θ} θs π ″ v ″ = inferVar' π v θ

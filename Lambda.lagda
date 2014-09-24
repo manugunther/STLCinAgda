@@ -151,6 +151,8 @@ _≟ₜ_ : Decidable  _≡_
 ⊙ ≟ₜ (θ₀ ⟼ θ₁) = no λ()
 (θ₀ ⟼ θ₁) ≟ₜ ⊙ = no λ()
 
+
+
 \end{code}
 
 Para inferir el tipo de un término necesitamos asignarle tipos a las variables libres que ocurren en el mismo. Para esto definimos un "contexto", el cual puede ser vacío o puede consistir de agregar un par (variable,tipo) a otro contexto. 
@@ -176,6 +178,7 @@ También necesitaremos expresar cuando una variable con un tipo sí pertenece a 
 
 \begin{code}
 
+
 data _∈_ : Var × Type → Ctx → Set where
   inHead : ∀ {y} {θ'} → (x : Var) → (θ : Type) → (π : Ctx) → 
            (p : y ∉ π) → x ≡ y → θ ≡ θ' → 
@@ -183,8 +186,35 @@ data _∈_ : Var × Type → Ctx → Set where
   inTail : (x : Var) → (θ : Type) → (π : Ctx) → (x' : Var) → 
            (θ' : Type) → ( x  , θ ) ∈ π → (p : x' ∉ π) → 
                        ( x  , θ ) ∈ (( x'  , θ' ) ▷ π ｢ p ｣)
-  
 
+mutual
+  _∙_ : Ctx → Ctx → Ctx
+  ø ∙ π' = π'
+  (t ▷ π ｢ x ｣) ∙ π' = t ▷ (π ∙ π') ｢ {!!} ｣
+
+  sameCtx : {π π' : Ctx} → {t : Var × Type} → 
+            proj₁ t ∉ π → π' ≡ π → proj₁ t ∉ π'
+  sameCtx t∉π refl = t∉π
+  
+  nose : {π : Ctx} → {t : Var × Type} → 
+         proj₁ t ∉ π → proj₁ t ∉ (π ∙ ø)
+  nose t∉π = {!!}
+
+  conmCtx : (π : Ctx) → π ∙ ø ≡ π
+  conmCtx ø = refl
+  conmCtx (t ▷ π ｢ x ｣) = cong (λ π' → t ▷ π' ｢ (sameCtx x {!!}) ｣) π≡π'
+    where
+      π≡π' = conmCtx π
+
+  _◃_ : Ctx → Var × Type → Ctx
+  π ◃ t = π ∙ (t ▷ ø ｢ notInEmpty ｣)
+
+  t∈π? : (t : Var × Type) → (π : Ctx) → (π' : Ctx) → (proj₁ t ∉ π) → (t ∈ (π  ∙ π')) ⊎ (proj₁ t ∉ (π  ∙ π'))
+  t∈π? t π ø t∉π = inj₂ (sameCtx t∉π {!!})
+  t∈π? t π (t₁ ▷ π' ｢ x ｣) t∉π with proj₁ t ≟ proj₁ t₁
+  t∈π? t π (t₁ ▷ π' ｢ x ｣) t∉π | yes p = {!!}
+  t∈π? t π (t₁ ▷ π' ｢ x ｣) t∉π | no ¬p = {!!} --t∈π? t (π ◃ t₁) {!!} {!!}  
+  
 data _⊢ₛ_∷_ : Ctx → LambdaTerm → Type → Set where
   _∣ᵥ : ∀ {x} {θ} {π} →
           ( x  ,′ θ ) ∈ π → (π ⊢ₛ ″ x ″ ∷ θ)
@@ -233,8 +263,6 @@ subsType π⊢t∷Θ refl = π⊢t∷Θ
 
 Error : Set
 Error = String
-
-
 
 infer' : {θ : Type} → List Type → (π : Ctx) → (t : LambdaTerm) → π ⊢ t ∷ θ
 infer' {θ} θs π ″ v ″ = inferVar' π v θ
@@ -335,6 +363,47 @@ t₄ = λ' "x" ⟶
 --  ∣ₗ)
 
 -- ###############################################
+
+-- IDEA 3
+
+module IDEA3 where
+
+  data _⊢₃_∷_ : Ctx → LambdaTerm → Type → Set where
+  
+  data TypeDec (A : Set) (B : Set) : Set where
+    yes : A → TypeDec A B
+    no  : B → TypeDec A B
+
+  data InDec (A : Set) (B : Set) : Set where
+    yes : A → InDec A B
+    no  : B → InDec A B
+
+  ∃θ∶_⊢_∷θ : Ctx → LambdaTerm → Set
+  ∃θ∶ π ⊢ t ∷θ = ∃ (λ θ → π ⊢₃ t ∷ θ)
+
+  ∀θ∶¬_⊢_∷θ : Ctx → LambdaTerm → Set
+  ∀θ∶¬ π ⊢ t ∷θ = (θ : Type) → ¬ π ⊢₃ t ∷ θ
+
+  v∈π??' : {θ : Type} → (π : Ctx) → (v : Var) → 
+           ((v , θ) ∈ π) → (v ∉ π) → InDec ((v , θ) ∈ π) (v ∉ π)
+  v∈π??' ø _ _ v∉π = no v∉π
+  v∈π??' (t ▷ π ｢ x ｣) v v∈π v∉π with proj₁ t ≟ v
+  v∈π??' (t ▷ π ｢ x ｣) v v∈π v∉π | yes p = {!!}
+  v∈π??' (t ▷ π ｢ x ｣) v v∈π v∉π | no ¬p = {!!}
+
+  v∈π?? : {θ : Type} → (π : Ctx) → (v : Var) → InDec ((v , θ) ∈ π) (v ∉ π)
+  v∈π?? = {!!} 
+
+  inferVar : (π : Ctx) → (v : Var) → TypeDec (∃θ∶ π ⊢ ″ v ″ ∷θ) (∀θ∶¬ π ⊢ ″ v ″ ∷θ)
+  inferVar π v with v∈π?? π v
+  inferVar π v | yes x = {!!}
+  inferVar π v | no  x = {!!}
+  
+  infer : (π : Ctx) → (t : LambdaTerm) → TypeDec (∃θ∶ π ⊢ t ∷θ) (∀θ∶¬ π ⊢ t ∷θ)
+  infer π ″ x ″ = inferVar π x
+  infer π (λ' x ⟶ t) = {!!}
+  infer π (t ● t₁) = {!!}
+
 
 -- IDEA 2
 inferVar : Ctx → Var → Set

@@ -186,105 +186,95 @@ data _∈_ : Var × Type → Ctx → Set where
   inTail : (x : Var) → (θ : Type) → (π : Ctx) → (x' : Var) → 
            (θ' : Type) → ( x  , θ ) ∈ π → (p : x' ∉ π) → 
                        ( x  , θ ) ∈ (( x'  , θ' ) ▷ π ｢ p ｣)
-
-mutual
-  _∙_ : Ctx → Ctx → Ctx
-  ø ∙ π' = π'
-  (t ▷ π ｢ x ｣) ∙ π' = t ▷ (π ∙ π') ｢ {!!} ｣
-
-  sameCtx : {π π' : Ctx} → {t : Var × Type} → 
-            proj₁ t ∉ π → π' ≡ π → proj₁ t ∉ π'
-  sameCtx t∉π refl = t∉π
   
-  nose : {π : Ctx} → {t : Var × Type} → 
-         proj₁ t ∉ π → proj₁ t ∉ (π ∙ ø)
-  nose t∉π = {!!}
-
-  conmCtx : (π : Ctx) → π ∙ ø ≡ π
-  conmCtx ø = refl
-  conmCtx (t ▷ π ｢ x ｣) = cong (λ π' → t ▷ π' ｢ (sameCtx x {!!}) ｣) π≡π'
-    where
-      π≡π' = conmCtx π
-
-  _◃_ : Ctx → Var × Type → Ctx
-  π ◃ t = π ∙ (t ▷ ø ｢ notInEmpty ｣)
-
-  t∈π? : (t : Var × Type) → (π : Ctx) → (π' : Ctx) → (proj₁ t ∉ π) → (t ∈ (π  ∙ π')) ⊎ (proj₁ t ∉ (π  ∙ π'))
-  t∈π? t π ø t∉π = inj₂ (sameCtx t∉π {!!})
-  t∈π? t π (t₁ ▷ π' ｢ x ｣) t∉π with proj₁ t ≟ proj₁ t₁
-  t∈π? t π (t₁ ▷ π' ｢ x ｣) t∉π | yes p = {!!}
-  t∈π? t π (t₁ ▷ π' ｢ x ｣) t∉π | no ¬p = {!!} --t∈π? t (π ◃ t₁) {!!} {!!}  
-  
-data _⊢ₛ_∷_ : Ctx → LambdaTerm → Type → Set where
+data _⊢_∷_ : Ctx → LambdaTerm → Type → Set where
   _∣ᵥ : ∀ {x} {θ} {π} →
-          ( x  ,′ θ ) ∈ π → (π ⊢ₛ ″ x ″ ∷ θ)
+          ( x  ,′ θ ) ∈ π → (π ⊢ ″ x ″ ∷ θ)
 
   _∣ₗ : ∀ {t} {x} {θ} {θ'} {π} → {p : x ∉ π} → 
-          (( x  , θ ) ▷ π ｢ p ｣  ⊢ₛ t ∷ θ') →
-          (π ⊢ₛ (λ' x ⟶ t) ∷ (θ ⟼ θ') )
+          (( x  , θ ) ▷ π ｢ p ｣  ⊢ t ∷ θ') →
+          (π ⊢ (λ' x ⟶ t) ∷ (θ ⟼ θ') )
 
   _∧_∣ₐ : ∀ {t₁} {t₂} {θ} {θ'} {π} →
-          (π ⊢ₛ t₁ ∷ (θ ⟼ θ')) →
-          (π ⊢ₛ t₂ ∷ θ) →
-          (π ⊢ₛ (t₁ ● t₂) ∷ θ')
+          (π ⊢ t₁ ∷ (θ ⟼ θ')) →
+          (π ⊢ t₂ ∷ θ) →
+          (π ⊢ (t₁ ● t₂) ∷ θ')
 
--- IDEA 1
--- Agregar un constructor a Juicio de Tipado que sea absurdo
--- Al final parece que no hizo falta agregar un "constructor absurdo"
--- En cambio usamos ⊎.
 
-_⊢_∷_ : Ctx → LambdaTerm → Type → Set
-π ⊢ t ∷ θ = π ⊢ₛ t ∷ θ ⊎ Unit
 
-v∈π? : (v : Var) → (θ : Type) → (π : Ctx) → (v , θ) ∈ π ⊎ Unit
-v∈π? _ _ ø = inj₂ unit
-v∈π? v θᵥ ((w , θ) ▷ π ｢ w∉π ｣) with v ≟ w | θᵥ ≟ₜ θ
-... | yes v≡w | yes θᵥ≡θ = inj₁ (inHead v θᵥ π w∉π v≡w θᵥ≡θ)
-... | _ | _ with v∈π? v θᵥ π
-v∈π? v θᵥ ((w , θ) ▷ π ｢ w∉π ｣) | _ | _ | inj₁ v∈π = 
-                                          inj₁ (inTail v θᵥ π w θ v∈π w∉π)
-v∈π? v θᵥ ((w , θ) ▷ π ｢ w∉π ｣) | _ | _ | inj₂ _ = inj₂ unit
+  
+data TypeDec (A : Set) (B : Set) : Set where
+  yes : A → TypeDec A B
+  no  : B → TypeDec A B
+                        
+data InDec (A : Set) (B : Set) : Set where
+  yes : A → InDec A B
+  no  : B → InDec A B
+                      
+∃θ∶_⊢_∷θ : Ctx → LambdaTerm → Set
+∃θ∶ π ⊢ t ∷θ = ∃ (λ θ → π ⊢ t ∷ θ)
+                                   
+∀θ∶¬_⊢_∷θ : Ctx → LambdaTerm → Set
+∀θ∶¬ π ⊢ t ∷θ = (θ : Type) → ¬ π ⊢ t ∷ θ
 
-v∉π? : (v : Var) → (π : Ctx) → v ∉ π ⊎ Unit
-v∉π? v ø = inj₁ notInEmpty
-v∉π? v ((w , θ) ▷ π ｢ w∉π ｣) with v ≟ w | v∉π? v π
-... | no v≠w | inj₁ v∉π  = inj₁ (notInNEmpty v π v∉π w∉π v≠w) 
-... |    _   |     _     = inj₂ unit
+{-                                          
+v∈π??' : {θ : Type} → (π : Ctx) → (v : Var) → 
+         ((v , θ) ∈ π) → (v ∉ π) → InDec ((v , θ) ∈ π) (v ∉ π)
+v∈π??' ø _ _ v∉π = no v∉π
+v∈π??' (t ▷ π ｢ x ｣) v v∈π v∉π with proj₁ t ≟ v
+v∈π??' (t ▷ π ｢ x ｣) v v∈π v∉π | yes p = {!!}
+v∈π??' (t ▷ π ｢ x ｣) v v∈π v∉π | no ¬p = {!!}
 
-inferVar' : (π : Ctx) → (v : Var) → (θ : Type) → π ⊢ ″ v ″ ∷ θ
-inferVar' ø _ _ = inj₂ unit
-inferVar' π v θ with v∈π? v θ π
-inferVar' π v θ | inj₁ v∈π = inj₁ (v∈π ∣ᵥ)
-inferVar' π v θ | inj₂ _ = inj₂ unit
+v∈π?? : {θ : Type} → (π : Ctx) → (v : Var) → InDec ((v , θ) ∈ π) (v ∉ π)
+v∈π?? = {!!} 
+-}
 
-subsType : {π : Ctx} {t : LambdaTerm} {θ θ' : Type} →
-          π ⊢ t ∷ θ → θ ≡ θ' → π ⊢ t ∷ θ'
-subsType π⊢t∷Θ refl = π⊢t∷Θ
 
-Error : Set
-Error = String
+aux' : (v : Var) → ∃ (λ θ → (v , θ) ∈ ø) → ⊥
+aux' v (θ , ())
 
-infer' : {θ : Type} → List Type → (π : Ctx) → (t : LambdaTerm) → π ⊢ t ∷ θ
-infer' {θ} θs π ″ v ″ = inferVar' π v θ
-infer' {(θ₀ ⟼ θ₁)} θs π (λ' v ⟶ t₀)  with v∉π? v π
-... | inj₂ _ = inj₂ unit
-... | inj₁ v∉π with infer' {θ₁} θs ((v , θ₀) ▷ π ｢ v∉π ｣) t₀ 
-... | inj₁ πᵥ⊢ₛt₀∷θ₁ = inj₁ (πᵥ⊢ₛt₀∷θ₁ ∣ₗ)
-... | inj₂ _ = inj₂ unit
-infer' {θ} (θ₀ ∷ θ₁ ∷ θs) π (λ' v ⟶ t₀) with (θ₀ ⟼ θ₁) ≟ₜ θ
-... | yes θ≡ₜθ₀⟼θ₁ = subsType (infer' {(θ₀ ⟼ θ₁)} θs π (λ' v ⟶ t₀) ) θ≡ₜθ₀⟼θ₁
-... | no _         = inj₂ unit
-infer' {θ} (θ' ∷ θs) π (t₁ ● t₂)  with infer' {(θ' ⟼ θ)} θs π t₁  | infer' {θ'} θs π t₂ 
-... | inj₂ _ | _ = inj₂ unit
-... | _ | inj₂ _ = inj₂ unit
-... | inj₁ π⊢ₛt₁∷θ'⟼θ | inj₁ π⊢ₛt₂∷θ' = inj₁ (π⊢ₛt₁∷θ'⟼θ ∧ π⊢ₛt₂∷θ' ∣ₐ)
-infer' _ _ _ = inj₂ unit
+-- En esta función probamos que si no existe θ' tal que (v,θ') ∈ π y
+-- v≠w, entonces no existe θ' tal que (v,θ') ∈ ((w , θ) ▷ π)
+aux'' : (π : Ctx) → (v : Var) → (w : Var) → (θ : Type) → ¬ (v ≡ w) →
+        (w∉π : w ∉ π) →  (p : ¬ (∃ (λ θ → (v , θ) ∈ π))) → 
+        ¬ (∃ (λ θ' → (v , θ') ∈ ((w , θ) ▷ π ｢ w∉π ｣)))
+-- v≠w es una función que toma un elemento de (v ≡ w) y retorna ⊥
+aux'' π v w θ v≠w w∉π p (θ' , inHead .v .θ' .π .w∉π v=w q) = v≠w v=w
+aux'' π v w θ v≠w w∉π p (θ' , inTail .v .θ' .π .w .θ v∈π .w∉π) = p (θ' , v∈π)
 
--- ################# Test ########################
 
-getType : {π : Ctx} {t : LambdaTerm} {θ : Type} → (π ⊢ t ∷ θ) → Type
-getType {θ = θ} (inj₁ x) = θ
-getType (inj₂ y) = {! no se que poner aca :)!}
+-- Dado un contexto π y una variable v decidimos si existe un tipo θ
+-- tal que (v , θ) ∈ π.
+v∈π? : (π : Ctx) → (v : Var) → Dec (∃ (λ θ → (v , θ) ∈ π))
+v∈π? ø v = no (aux' v)
+v∈π? ( (w , θ) ▷ π ｢ w∉π ｣) v  with v ≟ w | v∈π? π v
+... | yes p | _ = yes (θ , inHead v θ π w∉π p refl)
+... | no _  | yes (θ' , v,θ'∈π) = yes (θ' , inTail v θ' π w θ (v,θ'∈π) w∉π)
+... | no v≠w  | no pru = no (aux'' π v w θ v≠w w∉π pru)
+
+
+inferVar : (π : Ctx) → (v : Var) → Dec (∃ (λ θ → π ⊢ ″ v ″ ∷ θ))
+inferVar π v with v∈π? π v
+inferVar π v | yes (θ' , v∈π) = yes (θ' , v∈π ∣ᵥ)
+-- Si v no está en π entonces tenemos una función
+-- que dado un elemento de (v,θ') ∈ π retorna ⊥
+inferVar π v | no  v∉π = no (λ { (θ' , v∈π ∣ᵥ) → v∉π (θ' , v∈π) })
+
+{-
+ _∣ᵥ : ∀ {x} {θ} {π} →
+          ( x  ,′ θ ) ∈ π → (π ⊢ ″ x ″ ∷ θ)
+-}
+
+
+infer : (π : Ctx) → (t : LambdaTerm) → Dec (∃ (λ θ → π ⊢ t ∷ θ))
+infer π ″ v ″ = inferVar π v
+infer π (λ' v ⟶ t) = ?
+infer π (t₁ ● t₂) = {!!}
+
+
+
+identity : LambdaTerm
+identity = λ' "x" ⟶ ″ "x" ″ 
 
 θ : Type
 θ = (⊙ ⟼ ⊙) ⟼ ⊙ ⟼ ⊙
@@ -339,102 +329,9 @@ t₄ = λ' "x" ⟶
 ΔΔ : LambdaTerm
 ΔΔ = Δ ● Δ
 
--- inj₁
--- ((((inTail "f" (⊙ ⟼ ⊙) (("f" , ⊙ ⟼ ⊙) ▷ ø ｢ notInEmpty ｣) "x" ⊙
---     (inHead "f" (⊙ ⟼ ⊙) ø notInEmpty refl refl)
---     (notInNEmpty "x" ø notInEmpty notInEmpty
---      (.Data.String._.whatever "x" "f"))
---     ∣ᵥ)
---    ∧
---    (inTail "f" (⊙ ⟼ ⊙) (("f" , ⊙ ⟼ ⊙) ▷ ø ｢ notInEmpty ｣) "x" ⊙
---     (inHead "f" (⊙ ⟼ ⊙) ø notInEmpty refl refl)
---     (notInNEmpty "x" ø notInEmpty notInEmpty
---      (.Data.String._.whatever "x" "f"))
---     ∣ᵥ)
---    ∧
---    inHead "x" ⊙ (("f" , ⊙ ⟼ ⊙) ▷ ø ｢ notInEmpty ｣)
---    (notInNEmpty "x" ø notInEmpty notInEmpty
---     (.Data.String._.whatever "x" "f"))
---    refl refl
---    ∣ᵥ
---    ∣ₐ
---    ∣ₐ)
---   ∣ₗ)
---  ∣ₗ)
-
--- ###############################################
-
--- IDEA 3
-
-module IDEA3 where
-
-  data _⊢₃_∷_ : Ctx → LambdaTerm → Type → Set where
-  
-  data TypeDec (A : Set) (B : Set) : Set where
-    yes : A → TypeDec A B
-    no  : B → TypeDec A B
-
-  data InDec (A : Set) (B : Set) : Set where
-    yes : A → InDec A B
-    no  : B → InDec A B
-
-  ∃θ∶_⊢_∷θ : Ctx → LambdaTerm → Set
-  ∃θ∶ π ⊢ t ∷θ = ∃ (λ θ → π ⊢₃ t ∷ θ)
-
-  ∀θ∶¬_⊢_∷θ : Ctx → LambdaTerm → Set
-  ∀θ∶¬ π ⊢ t ∷θ = (θ : Type) → ¬ π ⊢₃ t ∷ θ
-
-  v∈π??' : {θ : Type} → (π : Ctx) → (v : Var) → 
-           ((v , θ) ∈ π) → (v ∉ π) → InDec ((v , θ) ∈ π) (v ∉ π)
-  v∈π??' ø _ _ v∉π = no v∉π
-  v∈π??' (t ▷ π ｢ x ｣) v v∈π v∉π with proj₁ t ≟ v
-  v∈π??' (t ▷ π ｢ x ｣) v v∈π v∉π | yes p = {!!}
-  v∈π??' (t ▷ π ｢ x ｣) v v∈π v∉π | no ¬p = {!!}
-
-  v∈π?? : {θ : Type} → (π : Ctx) → (v : Var) → InDec ((v , θ) ∈ π) (v ∉ π)
-  v∈π?? = {!!} 
-
-  inferVar : (π : Ctx) → (v : Var) → TypeDec (∃θ∶ π ⊢ ″ v ″ ∷θ) (∀θ∶¬ π ⊢ ″ v ″ ∷θ)
-  inferVar π v with v∈π?? π v
-  inferVar π v | yes x = {!!}
-  inferVar π v | no  x = {!!}
-  
-  infer : (π : Ctx) → (t : LambdaTerm) → TypeDec (∃θ∶ π ⊢ t ∷θ) (∀θ∶¬ π ⊢ t ∷θ)
-  infer π ″ x ″ = inferVar π x
-  infer π (λ' x ⟶ t) = {!!}
-  infer π (t ● t₁) = {!!}
 
 
--- IDEA 2
-inferVar : Ctx → Var → Set
-inferVar ø v = ⊥
-inferVar ( (w , θ) ▷ π ｢ w∉π ｣ ) v with (w == v)
-... | true = ((w , θ) ▷ π ｢ w∉π ｣) ⊢ ″ v ″ ∷ θ
-... | false = inferVar π v
-
-infer : List Type → Type → Ctx → LambdaTerm → Set
-infer _ _ π ″ v ″ = inferVar π v
-infer θs (θ₁ ⟼ θ₂) π (λ' v ⟶ t₀)  with v∉π? v π  
-... | inj₂ unit = ⊥
-... | inj₁ v∉π with infer θs θ₂ ((v , θ₁) ▷ π ｢ v∉π ｣) t₀
-... | ⊥ = ⊥
--- ... | ((.v , .θ₁) ▷ .π ｢ .v∉π ｣) ⊢ .t₀ ∷ .θ₂ = ?
-infer (θ ∷ θs) θ' π (t₁ ● t₂) with infer θs (θ ⟼ θ') π t₁ | infer θs θ π t₂
---infer (θ ∷ θs) θ' π (t₁ ● t₂) | π ⊢ t₁ ∷ (θ ⟼ θ') | _ = ?
-infer (θ ∷ θs) θ' π (t₁ ● t₂) | _ | _ = ⊥
-infer _ _ _ _ = ⊥
-
--- tdapp : ∀ {t₁} {t₂} {θ} {θ'} {π} →
---          (π ⊢ t₁ ∷ (θ ⟼ θ')) →
---          (π ⊢ t₂ ∷ θ) →
---          (π ⊢ (t₁ ● t₂) ∷ θ')
-
--- infer ø (λ' "x" ⟶ ″ "x" ″) = {θ : _} → ø ⊢ λ' "x" ⟶ ″ "x" ″ ∷ (θ ⟼ θ)
--- infer π ″ v ″ = {!!}
--- infer _ _ = {!!}
-
-
-
+-- Examples
   
 
 π₁ : Ctx
@@ -445,8 +342,8 @@ xNotπ₁ = notInNEmpty "x" ø notInEmpty notInEmpty aux
   where aux : ¬ "x" ≡ "y"
         aux ()
 
--- tyId : ∀ {θ} → ø ⊢ λ' "x" ⟶ ″ "x" ″ ∷ (θ ⟼ θ)
--- tyId {θ} = inHead "x" θ ø notInEmpty refl ∣ᵥ ∣
+tyId : ∀ {θ} → ø ⊢ λ' "x" ⟶ ″ "x" ″ ∷ (θ ⟼ θ)
+tyId {θ} = (inHead "x" θ ø notInEmpty refl refl ∣ᵥ) ∣ₗ
 
 -- ej1 : ( ( (var "x") ,′ ⊙) ▷ π₁ ｢ xNotπ₁ ｣) ⊢ (id (var "x")) ∷ ⊙
 -- ej1 = tdvar (inHead (var "x") ⊙ π₁ xNotπ₁)

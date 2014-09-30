@@ -103,13 +103,20 @@ Un término del cálculo Lambda podrá ser un identificador (el cual consta de u
 \begin{code}
 
 
+data Type : Set where
+  ⊙     : Type
+  _⟼_  : Type → Type → Type
+
+infixr 100 _⟼_
+
+
 Var : Set
 Var = String
 
 data LambdaTerm : Set where
-  ″_″     : Var → LambdaTerm
-  λ'_⟶_   : Var → LambdaTerm → LambdaTerm
-  _●_     : LambdaTerm → LambdaTerm → LambdaTerm
+  ″_″      : Var → LambdaTerm
+  λ'_∶_⟶_  : Var → Type → LambdaTerm → LambdaTerm
+  _●_      : LambdaTerm → LambdaTerm → LambdaTerm
  
 infixl 100 _●_
 
@@ -120,20 +127,15 @@ Como primera aproximación a lo deseado, implementaremos tipos sin variables. Un
 \begin{code}
 
 
-data Type : Set where
-  ⊙     : Type
-  _⟼_  : Type → Type → Type
 
-infixr 100 _⟼_
-
-fₜ : Type → Type
+{-fₜ : Type → Type
 fₜ (θ₀ ⟼ θ₁) = θ₀
 fₜ _ = {!!}
 
 sₜ : Type → Type
 sₜ (θ₀ ⟼ θ₁) = θ₁
 sₜ _ = {!!}
-
+-}
 \end{code}
 
 
@@ -141,7 +143,7 @@ Necesitaremos saber si dos tipos son iguales. Para eso definimos una función qu
 
 \begin{code}
 
-
+{-
 _≟ₜ_ : Decidable  _≡_
 ⊙ ≟ₜ ⊙ = yes refl
 (θ₀ ⟼ θ₁) ≟ₜ (θ₂ ⟼ θ₃) with θ₀ ≟ₜ θ₂ | θ₁ ≟ₜ θ₃
@@ -150,7 +152,7 @@ _≟ₜ_ : Decidable  _≡_
 (θ₀ ⟼ θ₁) ≟ₜ (θ₂ ⟼ θ₃)   | _        | no prf   = no (prf ∘ cong sₜ)
 ⊙ ≟ₜ (θ₀ ⟼ θ₁) = no λ()
 (θ₀ ⟼ θ₁) ≟ₜ ⊙ = no λ()
-
+-}
 
 
 \end{code}
@@ -159,7 +161,13 @@ Para inferir el tipo de un término necesitamos asignarle tipos a las variables 
 
 Cada variable puede aparecer solo una vez en el contexto (sólo puede tener un tipo), por lo tanto al agregar una variable $x$ con algún tipo al contexto $π$, pediremos también una "prueba" de que $x$ no está en el contexto. Estas "pruebas" las implementamos mediante un tipo de dato que representa justamente lo que queremos: Dada una variable y un contexto, o bien la variable no se encuentra en el contexto porque este es vacío, o bien la variable no se encuentra porque es distinta a la primera que ocurre y tampoco ocurre en el resto del contexto:
 
+
+También necesitaremos expresar cuando una variable con un tipo sí pertenece a un contexto. Para esto definimos otro tipo de dato. Un par (variable,tipo) puede estar en la "cabeza" de un contexto, o en la "cola".
+
+
 \begin{code}
+
+
 
 mutual
   data Ctx : Set where
@@ -174,64 +182,57 @@ mutual
 
 \end{code}
 
-También necesitaremos expresar cuando una variable con un tipo sí pertenece a un contexto. Para esto definimos otro tipo de dato. Un par (variable,tipo) puede estar en la "cabeza" de un contexto, o en la "cola".
-
 \begin{code}
 
 
 data _∈_ : Var × Type → Ctx → Set where
   inHead : ∀ {y} {θ'} → (x : Var) → (θ : Type) → (π : Ctx) → 
-           (p : y ∉ π) → x ≡ y → θ ≡ θ' → 
-                         ( x  , θ ) ∈ (( y  , θ' ) ▷ π ｢ p ｣)
+             (p : y ∉ π) → x ≡ y → θ ≡ θ' → 
+                       ( x  , θ ) ∈ (( y  , θ' ) ▷ π ｢ p ｣)
   inTail : (x : Var) → (θ : Type) → (π : Ctx) → (x' : Var) → 
-           (θ' : Type) → ( x  , θ ) ∈ π → (p : x' ∉ π) → 
-                       ( x  , θ ) ∈ (( x'  , θ' ) ▷ π ｢ p ｣)
+              (θ' : Type) → ( x  , θ ) ∈ π → (p : x' ∉ π) → 
+                 ( x  , θ ) ∈ (( x'  , θ' ) ▷ π ｢ p ｣)
+
+
+-- Conversión entre v ∉ π y ¬ (∃ (λ θ → (v , θ) ∈ π))
+∉↝ : {v : Var} {π : Ctx} → v ∉ π → ¬ (∃ (λ θ → (v , θ) ∈ π))
+∉↝ notInEmpty (_ , ())
+∉↝ (notInNEmpty v π v∉π v'∉π v≠v') 
+   (θ , inHead .v .θ .π .v'∉π v=v' _) = v≠v' v=v'
+∉↝ (notInNEmpty v π v∉π v'∉π v≠v') 
+   (θ , inTail .v .θ .π v' θ' v∈π .v'∉π) = (∉↝ v∉π) (θ , v∈π)
+
+∉↜ : {v : Var} {π : Ctx} → ¬ (∃ (λ θ → (v , θ) ∈ π)) → v ∉ π
+∉↜ {v} {ø} t↑ = notInEmpty
+∉↜ {v} {t ▷ π ｢ p ｣} t↑ = notInNEmpty v π (∉↜ (g t↑)) p (f t↑)
+  where
+    f : {v : Var} {π : Ctx} {v' : Var} {θ' : Type} {p : v' ∉ π} →
+      ¬ (∃ (λ θ → (v , θ) ∈ ((v' , θ') ▷ π ｢ p ｣))) →
+      ¬ (v ≡ v')
+    f {v} {π} {v'} {θ'} {p} t↑ v=v' = 
+      t↑ (θ' , inHead v θ' π p v=v' refl)
+    
+    g : {v : Var} {π : Ctx} {v' : Var} {θ' : Type} {p : v' ∉ π} →
+      ¬ (∃ (λ θ → (v , θ) ∈ ((v' , θ') ▷ π ｢ p ｣))) →
+      ¬ (∃ (λ θ → (v , θ) ∈ π))
+    g {v} {π} {v'} {θ'} {p} t↑ (θ , v∈π) = 
+      t↑ (θ , (inTail v θ π v' θ' v∈π p))
+
+
   
 data _⊢_∷_ : Ctx → LambdaTerm → Type → Set where
   _∣ᵥ : ∀ {x} {θ} {π} →
           ( x  ,′ θ ) ∈ π → (π ⊢ ″ x ″ ∷ θ)
 
-  _∣ₗ : ∀ {t} {x} {θ} {θ'} {π} → {p : x ∉ π} → 
+  _∣ₗ : ∀ {t} {x} {θ} {θ'} {π} {p : x ∉ π} → 
           (( x  , θ ) ▷ π ｢ p ｣  ⊢ t ∷ θ') →
-          (π ⊢ (λ' x ⟶ t) ∷ (θ ⟼ θ') )
+          (π ⊢ (λ' x ∶ θ ⟶ t) ∷ (θ ⟼ θ') )
 
   _∧_∣ₐ : ∀ {t₁} {t₂} {θ} {θ'} {π} →
           (π ⊢ t₁ ∷ (θ ⟼ θ')) →
           (π ⊢ t₂ ∷ θ) →
           (π ⊢ (t₁ ● t₂) ∷ θ')
 
-
-
-  
-data TypeDec (A : Set) (B : Set) : Set where
-  yes : A → TypeDec A B
-  no  : B → TypeDec A B
-                        
-data InDec (A : Set) (B : Set) : Set where
-  yes : A → InDec A B
-  no  : B → InDec A B
-                      
-∃θ∶_⊢_∷θ : Ctx → LambdaTerm → Set
-∃θ∶ π ⊢ t ∷θ = ∃ (λ θ → π ⊢ t ∷ θ)
-                                   
-∀θ∶¬_⊢_∷θ : Ctx → LambdaTerm → Set
-∀θ∶¬ π ⊢ t ∷θ = (θ : Type) → ¬ π ⊢ t ∷ θ
-
-{-                                          
-v∈π??' : {θ : Type} → (π : Ctx) → (v : Var) → 
-         ((v , θ) ∈ π) → (v ∉ π) → InDec ((v , θ) ∈ π) (v ∉ π)
-v∈π??' ø _ _ v∉π = no v∉π
-v∈π??' (t ▷ π ｢ x ｣) v v∈π v∉π with proj₁ t ≟ v
-v∈π??' (t ▷ π ｢ x ｣) v v∈π v∉π | yes p = {!!}
-v∈π??' (t ▷ π ｢ x ｣) v v∈π v∉π | no ¬p = {!!}
-
-v∈π?? : {θ : Type} → (π : Ctx) → (v : Var) → InDec ((v , θ) ∈ π) (v ∉ π)
-v∈π?? = {!!} 
--}
-
-
-aux' : (v : Var) → ∃ (λ θ → (v , θ) ∈ ø) → ⊥
-aux' v (θ , ())
 
 -- En esta función probamos que si no existe θ' tal que (v,θ') ∈ π y
 -- v≠w, entonces no existe θ' tal que (v,θ') ∈ ((w , θ) ▷ π)
@@ -245,36 +246,63 @@ aux'' π v w θ v≠w w∉π p (θ' , inTail .v .θ' .π .w .θ v∈π .w∉π) 
 
 -- Dado un contexto π y una variable v decidimos si existe un tipo θ
 -- tal que (v , θ) ∈ π.
-v∈π? : (π : Ctx) → (v : Var) → Dec (∃ (λ θ → (v , θ) ∈ π))
-v∈π? ø v = no (aux' v)
-v∈π? ( (w , θ) ▷ π ｢ w∉π ｣) v  with v ≟ w | v∈π? π v
+v∈π? : (v : Var) → (π : Ctx) → Dec (∃ (λ θ → (v , θ) ∈ π))
+v∈π? v ø = no (λ {(θ , ())})
+v∈π?  v ( (w , θ) ▷ π ｢ w∉π ｣) with v ≟ w | v∈π? v π
 ... | yes p | _ = yes (θ , inHead v θ π w∉π p refl)
 ... | no _  | yes (θ' , v,θ'∈π) = yes (θ' , inTail v θ' π w θ (v,θ'∈π) w∉π)
 ... | no v≠w  | no pru = no (aux'' π v w θ v≠w w∉π pru)
 
 
 inferVar : (π : Ctx) → (v : Var) → Dec (∃ (λ θ → π ⊢ ″ v ″ ∷ θ))
-inferVar π v with v∈π? π v
+inferVar π v with v∈π? v π
 inferVar π v | yes (θ' , v∈π) = yes (θ' , v∈π ∣ᵥ)
 -- Si v no está en π entonces tenemos una función
 -- que dado un elemento de (v,θ') ∈ π retorna ⊥
 inferVar π v | no  v∉π = no (λ { (θ' , v∈π ∣ᵥ) → v∉π (θ' , v∈π) })
 
-{-
- _∣ᵥ : ∀ {x} {θ} {π} →
-          ( x  ,′ θ ) ∈ π → (π ⊢ ″ x ″ ∷ θ)
--}
-
-
 infer : (π : Ctx) → (t : LambdaTerm) → Dec (∃ (λ θ → π ⊢ t ∷ θ))
 infer π ″ v ″ = inferVar π v
-infer π (λ' v ⟶ t) = ?
+infer π (λ' v ∶ θ ⟶ t) with v∈π? v π
+infer π (λ' v ∶ θ ⟶ t) | yes _ = {!!}
+infer π (λ' v ∶ θ ⟶ t) | no v∉π with infer ((v , θ) ▷ π ｢ ∉↜ v∉π ｣) t
+infer π (λ' v ∶ θ ⟶ t) | no v∉π | yes (θ' , t∷θ') = yes (θ ⟼ θ' ,  t∷θ' ∣ₗ)
+infer π (λ' v ∶ θ ⟶ t) | no v∉π | no t↑ = {!!}
+--        no (λ { (.θ ⟼ θ' , ?) → ? })
+{-
+infer π (λ' v ⟶ t) | no v∉π | yes (θ , t∷θ) = ? {-yes (⊙ ⟼ θ , (v∉π t∷θ) ∣ₗ)-}
+infer π (λ' v ⟶ t) | no v∉π | no notype = ? {-no (λ s → notype s)-}
+infer π (λ' v ⟶ t) | yes v∈π | _ = ?-}
 infer π (t₁ ● t₂) = {!!}
 
 
 
+-- Estamos intentando resolver el caso del infer de la abstraccion lambda, cuando
+-- la variable no está en el contexto y el subtérmino no tipa
+paux : ∀ {v} {θ} {π} {θ'} {t} {p} → (p' : v ∉ π) → 
+       (v , θ) ▷ π ｢ p ｣ ⊢ t ∷ θ' → (v , θ) ▷ π ｢ p' ｣ ⊢ t ∷ θ'
+paux p' (y ∣ᵥ) = {!!}
+paux p' (y ∣ₗ) = {!!}
+paux p' (y ∧ y' ∣ₐ) = {!!}
+
+tLambda : {v : Var} {θ : Type} {π : Ctx} {t : LambdaTerm} 
+          {p : v ∉ π} → 
+          ¬ (∃ (λ θ' → (v , θ) ▷ π ｢ p ｣ ⊢ t ∷ θ')) →
+          ¬ (∃ (λ θ'' → π ⊢ λ' v ∶ θ ⟶ t ∷ θ''))
+tLambda {v} {θ} {p = p} t↑ (.θ ⟼ θ' , 
+        _∣ₗ t∷θ') = t↑ (θ' , paux p t∷θ')
+tLambda t↑ ( ⊙ , () )
+
+
+{-
+  _∣ₗ : ∀ {t} {x} {θ} {θ'} {π} → {p : x ∉ π} → 
+          (( x  , θ ) ▷ π ｢ p ｣  ⊢ t ∷ θ') →
+          (π ⊢ (λ' x ⟶ t) ∷ (θ ⟼ θ') )
+-}
+
+{-
 identity : LambdaTerm
-identity = λ' "x" ⟶ ″ "x" ″ 
+identity = λ' "x"  ⟶ ″ "x" ″ 
 
 θ : Type
 θ = (⊙ ⟼ ⊙) ⟼ ⊙ ⟼ ⊙
@@ -329,11 +357,11 @@ t₄ = λ' "x" ⟶
 ΔΔ : LambdaTerm
 ΔΔ = Δ ● Δ
 
-
+-}
 
 -- Examples
   
-
+{-
 π₁ : Ctx
 π₁ = ( ( "y" ,′ ⊙) ▷ ø ｢ notInEmpty ｣)
 
@@ -344,7 +372,7 @@ xNotπ₁ = notInNEmpty "x" ø notInEmpty notInEmpty aux
 
 tyId : ∀ {θ} → ø ⊢ λ' "x" ⟶ ″ "x" ″ ∷ (θ ⟼ θ)
 tyId {θ} = (inHead "x" θ ø notInEmpty refl refl ∣ᵥ) ∣ₗ
-
+-}
 -- ej1 : ( ( (var "x") ,′ ⊙) ▷ π₁ ｢ xNotπ₁ ｣) ⊢ (id (var "x")) ∷ ⊙
 -- ej1 = tdvar (inHead (var "x") ⊙ π₁ xNotπ₁)
 

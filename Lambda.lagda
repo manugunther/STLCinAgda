@@ -172,13 +172,32 @@ También necesitaremos expresar cuando una variable con un tipo sí pertenece a 
 mutual
   data Ctx : Set where
     ø      : Ctx
-    _▷_｢_｣ : (t : Var × Type) → (π : Ctx) → (proj₁ t) ∉ π → Ctx
+    _▷_｢_｣ : (t : Var × Type) → (π : Ctx) → (p : (proj₁ t) ∉ π) → Ctx
 
   data _∉_ : Var → Ctx → Set where
     notInEmpty  : {x : Var} → x ∉ ø
     notInNEmpty : {x' : Var} {θ : Type} (x : Var) → (π : Ctx) → x ∉ π →
                   (p : x' ∉ π) → ¬ (x ≡ x') →
                  x ∉ ((x' , θ) ▷ π ｢ p ｣)
+
+data _≈_ : Ctx → Ctx → Set where
+  emptyCtxEq : ø ≈ ø
+  ctxEq      : ∀ {v} {θ} {π} {π'} → {p : v ∉ π} {p' : v ∉ π'} → 
+               π ≈ π' → (v , θ) ▷ π ｢ p ｣ ≈ (v , θ) ▷ π' ｢ p' ｣
+
+-- ≈ es relacion de equivalencia.
+
+reflCtx : ∀ {π} → π ≈ π
+reflCtx {ø} = emptyCtxEq
+reflCtx {t ▷ π ｢ p ｣} = ctxEq (reflCtx {π})
+
+transCtx : ∀ {π₀} {π₁} {π₂} → π₀ ≈ π₁ → π₁ ≈ π₂ → π₀ ≈ π₂
+transCtx emptyCtxEq emptyCtxEq = emptyCtxEq
+transCtx (ctxEq π₀≈π₁) (ctxEq π₁≈π₂) = ctxEq (transCtx π₀≈π₁ π₁≈π₂)
+
+symCtx : ∀ {π₀} {π₁} → π₀ ≈ π₁ → π₁ ≈ π₀
+symCtx emptyCtxEq = emptyCtxEq
+symCtx (ctxEq π₀≈π₁) = ctxEq (symCtx π₀≈π₁)
 
 \end{code}
 
@@ -233,6 +252,31 @@ data _⊢_∷_ : Ctx → LambdaTerm → Type → Set where
           (π ⊢ t₂ ∷ θ) →
           (π ⊢ (t₁ ● t₂) ∷ θ')
 
+changeCtxVar : ∀ {x} {θ} {π₀} {π₁} → 
+               (x , θ) ∈ π₀ → π₀ ≈ π₁ → (x , θ) ∈ π₁
+changeCtxVar x∈π₀ emptyCtxEq = x∈π₀
+changeCtxVar {x} {θ} {t ▷ π₀' ｢ p ｣} {.t ▷ π₁' ｢ p' ｣} 
+             (inHead .x .θ .π₀' .p x₁ x₂) (ctxEq π₀'≈π₁') = inHead x θ π₁' p' x₁ x₂
+changeCtxVar {x} {θ} {(x' , θ') ▷ π₀' ｢ p ｣} {(.x' , .θ') ▷ π₁' ｢ p' ｣} 
+             (inTail .x .θ .π₀' .x' .θ' x∈π₀' .p) (ctxEq π₀'≈π₁') = 
+                           inTail x θ π₁' x' θ' (changeCtxVar x∈π₀' π₀'≈π₁') p'
+
+change∉ : ∀ {v} {π₀} {π₁} → π₀ ≈ π₁ → v ∉ π₀ → v ∉ π₁
+change∉ emptyCtxEq notInEmpty = notInEmpty
+change∉ {v} {t ▷ π₀ ｢ p ｣} {.t ▷ π₁ ｢ p' ｣} 
+            (ctxEq e) (notInNEmpty .v .π₀ p₀ .p x) = 
+              notInNEmpty v π₁ (change∉ e p₀) p' x
+
+changeCtx : ∀ {π₀} {π₁} {t} {θ} → π₀ ⊢ t ∷ θ → π₀ ≈ π₁ → π₁ ⊢ t ∷ θ
+changeCtx (x∈π₀ ∣ᵥ) π₀≈π₁ = changeCtxVar x∈π₀ π₀≈π₁ ∣ᵥ
+changeCtx {π₀} {π₁} {t = λ' v ∶ θᵥ ⟶ t₀} {θ = .θᵥ ⟼ θ}
+          (_∣ₗ {.t₀} {.v} {.θᵥ} {.θ} {.π₀} {x∉π₀} π₀⊢t∷θ) π₀≈π₁ = 
+          _∣ₗ {p = change∉ π₀≈π₁ x∉π₀} (changeCtx π₀⊢t∷θ (ctxEq π₀≈π₁)) 
+changeCtx (π₀⊢t∷θ ∧ π₀⊢t∷θ₁ ∣ₐ) π₀≈π₁ = 
+          (changeCtx π₀⊢t∷θ π₀≈π₁) ∧ (changeCtx π₀⊢t∷θ₁ π₀≈π₁) ∣ₐ
+
+--  ctxEq      : ∀ {v} {θ} {π} {π'} → {p : v ∉ π} {p' : v ∉ π'} → 
+  --             π ≈ π' → (v , θ) ▷ π ｢ p ｣ ≈ (v , θ) ▷ π' ｢ p' ｣
 
 -- En esta función probamos que si no existe θ' tal que (v,θ') ∈ π y
 -- v≠w, entonces no existe θ' tal que (v,θ') ∈ ((w , θ) ▷ π)
@@ -261,44 +305,27 @@ inferVar π v | yes (θ' , v∈π) = yes (θ' , v∈π ∣ᵥ)
 -- que dado un elemento de (v,θ') ∈ π retorna ⊥
 inferVar π v | no  v∉π = no (λ { (θ' , v∈π ∣ᵥ) → v∉π (θ' , v∈π) })
 
-infer : (π : Ctx) → (t : LambdaTerm) → Dec (∃ (λ θ → π ⊢ t ∷ θ))
-infer π ″ v ″ = inferVar π v
-infer π (λ' v ∶ θ ⟶ t) with v∈π? v π
-infer π (λ' v ∶ θ ⟶ t) | yes _ = {!!}
-infer π (λ' v ∶ θ ⟶ t) | no v∉π with infer ((v , θ) ▷ π ｢ ∉↜ v∉π ｣) t
-infer π (λ' v ∶ θ ⟶ t) | no v∉π | yes (θ' , t∷θ') = yes (θ ⟼ θ' ,  t∷θ' ∣ₗ)
-infer π (λ' v ∶ θ ⟶ t) | no v∉π | no t↑ = {!!}
---        no (λ { (.θ ⟼ θ' , ?) → ? })
-{-
-infer π (λ' v ⟶ t) | no v∉π | yes (θ , t∷θ) = ? {-yes (⊙ ⟼ θ , (v∉π t∷θ) ∣ₗ)-}
-infer π (λ' v ⟶ t) | no v∉π | no notype = ? {-no (λ s → notype s)-}
-infer π (λ' v ⟶ t) | yes v∈π | _ = ?-}
-infer π (t₁ ● t₂) = {!!}
-
-
-
--- Estamos intentando resolver el caso del infer de la abstraccion lambda, cuando
--- la variable no está en el contexto y el subtérmino no tipa
-paux : ∀ {v} {θ} {π} {θ'} {t} {p} → (p' : v ∉ π) → 
-       (v , θ) ▷ π ｢ p ｣ ⊢ t ∷ θ' → (v , θ) ▷ π ｢ p' ｣ ⊢ t ∷ θ'
-paux p' (y ∣ᵥ) = {!!}
-paux p' (y ∣ₗ) = {!!}
-paux p' (y ∧ y' ∣ₐ) = {!!}
-
-tLambda : {v : Var} {θ : Type} {π : Ctx} {t : LambdaTerm} 
+inferL : {v : Var} {θ : Type} {π : Ctx} {t : LambdaTerm} 
           {p : v ∉ π} → 
           ¬ (∃ (λ θ' → (v , θ) ▷ π ｢ p ｣ ⊢ t ∷ θ')) →
           ¬ (∃ (λ θ'' → π ⊢ λ' v ∶ θ ⟶ t ∷ θ''))
-tLambda {v} {θ} {p = p} t↑ (.θ ⟼ θ' , 
-        _∣ₗ t∷θ') = t↑ (θ' , paux p t∷θ')
-tLambda t↑ ( ⊙ , () )
+inferL {v} {θ} {π} {t} {p} 
+            t↑ (.θ ⟼ θ' , _∣ₗ {.t} {.v} {.θ} {.θ'} {.π} {p'} t∷θ' ) = 
+                   t↑ (θ' , changeCtx t∷θ' (ctxEq reflCtx))
+inferL t↑ ( ⊙ , () )
 
+inferL2 : ∀ {v} {θᵥ} {θ} {π} {t} → (v , θ) ∈ π → ¬ (∃ (λ θ' → π ⊢ λ' v ∶ θᵥ ⟶ t ∷ θ'))
+inferL2 v∈π (⊙ , ())
+inferL2 {θ = θ} v∈π (θᵥ ⟼ θ' , _∣ₗ {p = v∉π} π⊢λ't∷θ') = ∉↝ v∉π (θ , v∈π)
 
-{-
-  _∣ₗ : ∀ {t} {x} {θ} {θ'} {π} → {p : x ∉ π} → 
-          (( x  , θ ) ▷ π ｢ p ｣  ⊢ t ∷ θ') →
-          (π ⊢ (λ' x ⟶ t) ∷ (θ ⟼ θ') )
--}
+infer : (π : Ctx) → (t : LambdaTerm) → Dec (∃ (λ θ → π ⊢ t ∷ θ))
+infer π ″ v ″ = inferVar π v
+infer π (λ' v ∶ θ ⟶ t) with v∈π? v π
+infer π (λ' v ∶ θ ⟶ t) | yes (θᵥ , v∈π) = no (inferL2 {θᵥ = θ} v∈π)
+infer π (λ' v ∶ θ ⟶ t) | no v∉π with infer ((v , θ) ▷ π ｢ ∉↜ v∉π ｣) t
+infer π (λ' v ∶ θ ⟶ t) | no v∉π | yes (θ' , t∷θ') = yes (θ ⟼ θ' ,  t∷θ' ∣ₗ)
+infer π (λ' v ∶ θ ⟶ t) | no v∉π | no t↑ = no (inferL t↑)
+infer π (t₁ ● t₂) = {!!}
 
 {-
 identity : LambdaTerm

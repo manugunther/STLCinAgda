@@ -57,7 +57,8 @@
    {} % Add fancy options here if you like.
 
 
-\title{Implementación de Cálculo Lambda simplemente tipado en Agda}
+\title{Agda, un lenguaje con tipos dependientes}
+\author{Alejandro Gadea, Emmanuel Gunther}
 
  \begin{document}
  
@@ -68,37 +69,75 @@
 
 \section{Introducción}
 
+En este trabajo estudiamos la teoría de tipos ....
+
 Para aprender a programar con tipos dependientes en Agda nos propusimos
 implementar el Cálculo Lambda con un sistema de tipos simple sin anotaciones.
 
+\section{Teoría de tipos}
 
-\section{Implementación}
+un resumen de teoría de tipos, como lo que leímos en homotopy type theory.
+
+\section{Agda}
+
+hablar un poco de las generalidades de agda
+
+\section{Un inferidor de tipos para el cálculo lambda certificado}
+
+\subsection{Descripción del problema}
+
+Como ejercicio práctico para entender la programación con tipos dependientes
+nos propusimos implementar un inferidor de tipos para el cálculo lambda, el cual
+dado un término $t$ y un contexto de asignaciones de tipos a variables $\pi$, retorne
+si existe un tipo $\theta$ tal que $\pi \vdash t :: \theta$ (el término $t$ tiene tipo $\theta$
+bajo el contexto $\pi$) o si no existe, en cuyo caso deberá retornar una función que dado
+un juicio de tipado $\pi \vdash t :: \theta$ podemos obtener $\bot$ (el tipo vacío), lo cual 
+representa una prueba de que para todo tipo $\theta$ no existe juicio de tipado.
+
+Con el programa que queremos implementar no obtendremos solo un resultado para nuestro problema, sino
+también una \textbf{prueba} de que el resultado es el correcto.
+
+Por cuestiones de simplicidad, no consideraremos variables de tipo, por lo que un tipo
+podrá ser el tipo básico $\odot$ o dados dos tipos $\theta_1$ y $\theta_2$, el tipo $\theta_1 \rightarrow \theta_2$.
+
+Esto nos obliga a que en la abstracción lambda debemos anotar el tipo de la variable, caso contrario por ejemplo
+para el término $id = \lambda\,x\,.\,x$ no podríamos distinguir si tiene tipo $\odot \rightarrow \odot$ o 
+$(\odot \rightarrow \odot) \rightarrow (\odot \rightarrow \odot)$, etc. Anotando el tipo de la variable, 
+los términos ($\lambda\,x : \odot\,.\,x$) y ($\lambda\,x : (\odot \rightarrow \odot)\,.\,x$) son distintos
+y evitan esta ambigüedad.
+
+
+\subsection{Librerías auxiliares}
 
 Para la implementación utilizaremos varias librerías de Agda:
 
 \begin{code}
 module Lambda where
 
-open import Data.Nat hiding (_≟_)
 open import Data.String
-open import Data.List
-open import Data.Bool hiding (_≟_)
-open import Data.Empty
 -- Para la equivalencia de tipos:
-open import Relation.Binary.Core
 open import Relation.Binary.PropositionalEquality
 -- Para el tipo Bottom y la negación de un tipo:
 open import Relation.Nullary
 -- Para las 2-uplas:
 open import Data.Product
-open import Data.Sum
-open import Data.Unit hiding (_≟_)
-open import Function
+--open import Data.Sum
 
 \end{code}
 
+String, para representar las variables de los términos. PropositionalEquality tiene definido el tipo de la igualdad
+proposicional entre dos tipos, tal como lo explicamos en la sección 2. Nullary para tener el tipo vacío $\bot$.
+Y por último el producto que lo necesitamos para representar los pares (variable, tipo) en los contextos.
+
+\subsection{Tipos y Términos del Cálculo Lambda}
+
+
+Como dijimos previamente, un tipo del cálculo lambda podrá ser el tipo básico $\odot$ ó un 
 
 Un término del cálculo Lambda podrá ser un identificador (el cual consta de una variable), una abstracción (que consta de una variable y un término) o una aplicación (dos términos).
+
+
+
 
 \begin{code}
 
@@ -186,7 +225,6 @@ data _≈_ : Ctx → Ctx → Set where
                π ≈ π' → (v , θ) ▷ π ｢ p ｣ ≈ (v , θ) ▷ π' ｢ p' ｣
 
 -- ≈ es relacion de equivalencia.
-
 reflCtx : ∀ {π} → π ≈ π
 reflCtx {ø} = emptyCtxEq
 reflCtx {t ▷ π ｢ p ｣} = ctxEq (reflCtx {π})
@@ -208,9 +246,9 @@ data _∈_ : Var × Type → Ctx → Set where
   inHead : ∀ {y} {θ'} → (x : Var) → (θ : Type) → (π : Ctx) → 
              (p : y ∉ π) → x ≡ y → θ ≡ θ' → 
                        ( x  , θ ) ∈ (( y  , θ' ) ▷ π ｢ p ｣)
-  inTail : (x : Var) → (θ : Type) → (π : Ctx) → (x' : Var) → 
-              (θ' : Type) → ( x  , θ ) ∈ π → (p : x' ∉ π) → 
-                 ( x  , θ ) ∈ (( x'  , θ' ) ▷ π ｢ p ｣)
+  inTail : (x : Var) → (θ : Type) → (π : Ctx) → (y : Var) → 
+              (θ' : Type) → ( x  , θ ) ∈ π → (p : y ∉ π) → 
+                 ( x  , θ ) ∈ (( y  , θ' ) ▷ π ｢ p ｣)
 
 
 -- Conversión entre v ∉ π y ¬ (∃ (λ θ → (v , θ) ∈ π))
@@ -274,9 +312,6 @@ changeCtx {π₀} {π₁} {t = λ' v ∶ θᵥ ⟶ t₀} {θ = .θᵥ ⟼ θ}
           _∣ₗ {p = change∉ π₀≈π₁ x∉π₀} (changeCtx π₀⊢t∷θ (ctxEq π₀≈π₁)) 
 changeCtx (π₀⊢t∷θ ∧ π₀⊢t∷θ₁ ∣ₐ) π₀≈π₁ = 
           (changeCtx π₀⊢t∷θ π₀≈π₁) ∧ (changeCtx π₀⊢t∷θ₁ π₀≈π₁) ∣ₐ
-
---  ctxEq      : ∀ {v} {θ} {π} {π'} → {p : v ∉ π} {p' : v ∉ π'} → 
-  --             π ≈ π' → (v , θ) ▷ π ｢ p ｣ ≈ (v , θ) ▷ π' ｢ p' ｣
 
 -- En esta función probamos que si no existe θ' tal que (v,θ') ∈ π y
 -- v≠w, entonces no existe θ' tal que (v,θ') ∈ ((w , θ) ▷ π)

@@ -122,7 +122,7 @@ open import Relation.Binary.PropositionalEquality
 open import Relation.Nullary
 -- Para las 2-uplas:
 open import Data.Product
---open import Data.Sum
+open import Function
 
 \end{code}
 
@@ -183,16 +183,18 @@ Necesitaremos saber si dos tipos son iguales. Para eso definimos una función qu
 
 \begin{code}
 
-{-
-_≟ₜ_ : Decidable  _≡_
+cong⟼⁻¹ : ∀ {θ₁} {θ₂} {θ₁'} {θ₂'} → θ₁ ⟼ θ₂ ≡ θ₁' ⟼ θ₂' → θ₁ ≡ θ₁' × θ₂ ≡ θ₂'
+cong⟼⁻¹ refl = refl , refl
+
+-- La igualdad de tipos es decidible
+_≟ₜ_ : (θ : Type) → (θ' : Type) → Dec (θ ≡ θ')
 ⊙ ≟ₜ ⊙ = yes refl
-(θ₀ ⟼ θ₁) ≟ₜ (θ₂ ⟼ θ₃) with θ₀ ≟ₜ θ₂ | θ₁ ≟ₜ θ₃
-(θ₀ ⟼ θ₁) ≟ₜ (.θ₀ ⟼ .θ₁) | yes refl | yes refl = yes refl
-(θ₀ ⟼ θ₁) ≟ₜ (θ₂ ⟼ θ₃)   | no prf   | _        = no (prf ∘ cong fₜ)
-(θ₀ ⟼ θ₁) ≟ₜ (θ₂ ⟼ θ₃)   | _        | no prf   = no (prf ∘ cong sₜ)
-⊙ ≟ₜ (θ₀ ⟼ θ₁) = no λ()
-(θ₀ ⟼ θ₁) ≟ₜ ⊙ = no λ()
--}
+⊙ ≟ₜ θ ⟼ θ' = no (λ ())
+θ₁ ⟼ θ₂ ≟ₜ ⊙ = no (λ ())
+θ₁ ⟼ θ₂ ≟ₜ θ₁' ⟼ θ₂' with θ₁ ≟ₜ θ₁' | θ₂ ≟ₜ θ₂'
+θ₁ ⟼ θ₂ ≟ₜ θ₁' ⟼ θ₂' | yes p | yes p' = yes (cong₂ _⟼_ p p')
+θ₁ ⟼ θ₂ ≟ₜ θ₁' ⟼ θ₂' | _ | no ¬p = no (λ θ₁⟼θ₂≡θ₁'⟼θ₂' → ¬p (proj₂ (cong⟼⁻¹ θ₁⟼θ₂≡θ₁'⟼θ₂')))
+θ₁ ⟼ θ₂ ≟ₜ θ₁' ⟼ θ₂' | no ¬p | _ = no (λ θ₁⟼θ₂≡θ₁'⟼θ₂' → ¬p (proj₁ (cong⟼⁻¹ θ₁⟼θ₂≡θ₁'⟼θ₂')))
 
 
 \end{code}
@@ -379,11 +381,11 @@ uniqueTypeVar (inTail x θ π x' θ'' x,θ∈π x'∉π) (inTail .x θ' .π .x' 
 uniqueType : ∀ {π} {t} {θ} {θ'} → π ⊢ t ∷ θ → π ⊢ t ∷ θ' → θ ≡ θ'
 uniqueType (x,θ∈π ∣ᵥ) (x,θ'∈π ∣ᵥ) = uniqueTypeVar x,θ∈π x,θ'∈π
 uniqueType (_∣ₗ {θ = θ} π⊢t∷θ) (_∣ₗ {θ = .θ} π⊢t∷θ') = cong (_⟼_ θ) (uniqueType π⊢t∷θ (changeCtx π⊢t∷θ' (ctxEq reflCtx)))
-uniqueType {θ = θ} {θ' = θ'} (_∧_∣ₐ {θ' = .θ} π⊢t∷θ₁⟼θ₂ π⊢t∷θ₁) (_∧_∣ₐ π⊢t∷θ₁'⟼θ₂' π⊢t∷θ₁') = 
-                   cong' (trans (uniqueType π⊢t∷θ₁⟼θ₂ π⊢t∷θ₁'⟼θ₂') (cong (λ θ → θ ⟼ θ') (sym (uniqueType π⊢t∷θ₁ π⊢t∷θ₁'))))
-  where
-    cong' : ∀ {θ} {θ'} {θ''} → θ ⟼ θ' ≡ θ ⟼ θ'' → θ' ≡ θ''
-    cong' refl = refl
+uniqueType {θ = θ} {θ' = θ'} 
+           (_∧_∣ₐ {θ' = .θ} π⊢t∷θ₁⟼θ₂ π⊢t∷θ₁)
+           (_∧_∣ₐ π⊢t∷θ₁'⟼θ₂' π⊢t∷θ₁') = 
+                           proj₂ $ cong⟼⁻¹ (trans (uniqueType π⊢t∷θ₁⟼θ₂ π⊢t∷θ₁'⟼θ₂') 
+                                           (cong (λ θ → θ ⟼ θ') (sym (uniqueType π⊢t∷θ₁ π⊢t∷θ₁'))))
 
 inferApp₁₂ : ∀ {π} {t₁} {t₂} → 
              ∃ (λ θ → π ⊢ t₁ ∷ θ) →

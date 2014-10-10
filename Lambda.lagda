@@ -114,6 +114,7 @@ Para la implementación utilizaremos varias librerías de Agda:
 \begin{code}
 module Lambda where
 
+open import Data.Empty
 open import Data.String
 -- Para la equivalencia de tipos:
 open import Relation.Binary.PropositionalEquality
@@ -241,7 +242,6 @@ symCtx (ctxEq π₀≈π₁) = ctxEq (symCtx π₀≈π₁)
 
 \begin{code}
 
-
 data _∈_ : Var × Type → Ctx → Set where
   inHead : ∀ {y} {θ'} → (x : Var) → (θ : Type) → (π : Ctx) → 
              (p : y ∉ π) → x ≡ y → θ ≡ θ' → 
@@ -289,6 +289,9 @@ data _⊢_∷_ : Ctx → LambdaTerm → Type → Set where
           (π ⊢ t₁ ∷ (θ ⟼ θ')) →
           (π ⊢ t₂ ∷ θ) →
           (π ⊢ (t₁ ● t₂) ∷ θ')
+
+
+-- invApp : π ⊢ t t' ∷ θ -> existen theta1 tal que pi |- t :: theta1 -> \theta y pi |- t' : theta1
 
 changeCtxVar : ∀ {x} {θ} {π₀} {π₁} → 
                (x , θ) ∈ π₀ → π₀ ≈ π₁ → (x , θ) ∈ π₁
@@ -353,6 +356,56 @@ inferL2 : ∀ {v} {θᵥ} {θ} {π} {t} → (v , θ) ∈ π → ¬ (∃ (λ θ' 
 inferL2 v∈π (⊙ , ())
 inferL2 {θ = θ} v∈π (θᵥ ⟼ θ' , _∣ₗ {p = v∉π} π⊢λ't∷θ') = ∉↝ v∉π (θ , v∈π)
 
+--  _∣ᵥ : ∀ {x} {θ} {π} →
+--          ( x  ,′ θ ) ∈ π → (π ⊢ ″ x ″ ∷ θ)
+--  _∣ₗ : ∀ {t} {x} {θ} {θ'} {π} {p : x ∉ π} → 
+--          (( x  , θ ) ▷ π ｢ p ｣  ⊢ t ∷ θ') →
+--          (π ⊢ (λ' x ∶ θ ⟶ t) ∷ (θ ⟼ θ') )
+
+
+
+uniqueTypeVar : ∀ {π} {x} {θ} {θ'} → (x  , θ) ∈ π → (x , θ') ∈ π → θ ≡ θ'
+uniqueTypeVar (inHead x θ π a∉π x≡a θ≡θₐ) (inHead .x θ' .π .a∉π x≡a' θ'≡θₐ) = trans θ≡θₐ (sym θ'≡θₐ)
+uniqueTypeVar (inHead x θ π a∉π x≡a θ≡θₐ) (inTail .x θ' .π a θ'' x,θ'∈π .a∉π) = ⊥-elim (∉↝ a∉π (θ' , subst (λ z → (z , θ') ∈ π) x≡a x,θ'∈π))
+uniqueTypeVar (inTail x θ' π a θ'' x,θ'∈π a∉π) (inHead .x θ .π .a∉π x≡a θ≡θₐ) = ⊥-elim (∉↝ a∉π (θ' , subst (λ z → (z , θ') ∈ π) x≡a x,θ'∈π))
+uniqueTypeVar (inTail x θ π x' θ'' x,θ∈π x'∉π) (inTail .x θ' .π .x' .θ'' x,θ'∈π .x'∉π) = uniqueTypeVar x,θ∈π x,θ'∈π
+
+  -- _∧_∣ₐ : ∀ {t₁} {t₂} {θ} {θ'} {π} →
+  --         (π ⊢ t₁ ∷ (θ ⟼ θ')) →
+  --         (π ⊢ t₂ ∷ θ) →
+  --         (π ⊢ (t₁ ● t₂) ∷ θ')
+
+
+uniqueType : ∀ {π} {t} {θ} {θ'} → π ⊢ t ∷ θ → π ⊢ t ∷ θ' → θ ≡ θ'
+uniqueType (x,θ∈π ∣ᵥ) (x,θ'∈π ∣ᵥ) = uniqueTypeVar x,θ∈π x,θ'∈π
+uniqueType (_∣ₗ {θ = θ} π⊢t∷θ) (_∣ₗ {θ = .θ} π⊢t∷θ') = cong (_⟼_ θ) (uniqueType π⊢t∷θ (changeCtx π⊢t∷θ' (ctxEq reflCtx)))
+uniqueType {θ = θ} {θ' = θ'} (_∧_∣ₐ {θ' = .θ} π⊢t∷θ₁⟼θ₂ π⊢t∷θ₁) (_∧_∣ₐ π⊢t∷θ₁'⟼θ₂' π⊢t∷θ₁') = 
+                   cong' (trans (uniqueType π⊢t∷θ₁⟼θ₂ π⊢t∷θ₁'⟼θ₂') (cong (λ θ → θ ⟼ θ') (sym (uniqueType π⊢t∷θ₁ π⊢t∷θ₁'))))
+  where
+    cong' : ∀ {θ} {θ'} {θ''} → θ ⟼ θ' ≡ θ ⟼ θ'' → θ' ≡ θ''
+    cong' refl = refl
+
+inferApp₁₂ : ∀ {π} {t₁} {t₂} → 
+             ∃ (λ θ → π ⊢ t₁ ∷ θ) →
+             ∃ (λ θ' → π ⊢ t₂ ∷ θ') →
+             Dec (∃ (λ θ → π ⊢ (t₁ ● t₂) ∷ θ))
+inferApp₁₂ (⊙ , π⊢t₁∷⊙) π⊢t₂∷θ = no (t₁Absurdo π⊢t₁∷⊙)
+  where
+    emptyNotArrow : ∀ {θ} {θ'} → ¬ (⊙ ≡ θ ⟼ θ')
+    emptyNotArrow {θ} {θ'} ()
+    t₁Absurdo : ∀ {π} {t₁} {t₂} → π ⊢ t₁ ∷ ⊙ → ¬ ∃ (λ θ → π ⊢ (t₁ ● t₂) ∷ θ)
+    t₁Absurdo π⊢t₁∷⊙ (θ' , _∧_∣ₐ {θ = θ} π⊢t₁∷θ⟼θ' π⊢t₂∷θ) = emptyNotArrow (uniqueType π⊢t₁∷⊙ π⊢t₁∷θ⟼θ')
+
+inferApp₁₂ (proj₁ ⟼ proj₂ , proj₃) b = {!!}
+
+  
+
+inferApp₁ : ∀ {π} {t₁} {t₂} → ¬ (∃ (λ θ → π ⊢ t₁ ∷ θ)) → ¬ (∃ (λ θ → π ⊢ (t₁ ● t₂)  ∷ θ))
+inferApp₁ ¬π⊢t₁∷θ (θ' , _∧_∣ₐ {θ = θ} {θ' = .θ'} π⊢t₁∷θ⟼θ' π⊢t₂∷θ' ) = ¬π⊢t₁∷θ (θ ⟼ θ' , π⊢t₁∷θ⟼θ')
+
+inferApp₂ : ∀ {π} {t₁} {t₂} → ¬ (∃ (λ θ → π ⊢ t₂ ∷ θ)) → ¬ (∃ (λ θ → π ⊢ (t₁ ● t₂)  ∷ θ))
+inferApp₂ ¬π⊢t₂∷θ (θ' , _∧_∣ₐ {θ = θ} {θ' = .θ'} π⊢t₁∷θ⟼θ' π⊢t₂∷θ') = ¬π⊢t₂∷θ (θ , π⊢t₂∷θ')
+
 infer : (π : Ctx) → (t : LambdaTerm) → Dec (∃ (λ θ → π ⊢ t ∷ θ))
 infer π ″ v ″ = inferVar π v
 infer π (λ' v ∶ θ ⟶ t) with v∈π? v π
@@ -360,7 +413,10 @@ infer π (λ' v ∶ θ ⟶ t) | yes (θᵥ , v∈π) = no (inferL2 {θᵥ = θ} 
 infer π (λ' v ∶ θ ⟶ t) | no v∉π with infer ((v , θ) ▷ π ｢ ∉↜ v∉π ｣) t
 infer π (λ' v ∶ θ ⟶ t) | no v∉π | yes (θ' , t∷θ') = yes (θ ⟼ θ' ,  t∷θ' ∣ₗ)
 infer π (λ' v ∶ θ ⟶ t) | no v∉π | no t↑ = no (inferL t↑)
-infer π (t₁ ● t₂) = {!!}
+infer π (t₁ ● t₂) with infer π t₁ | infer π t₂
+infer π (t₁ ● t₂) | no ¬π⊢t₁∷θ⟼θ' | _ = no (inferApp₁ ¬π⊢t₁∷θ⟼θ')
+infer π (t₁ ● t₂) | _ | no ¬π⊢t₂∷θ = no (inferApp₂ ¬π⊢t₂∷θ)
+infer π (t₁ ● t₂) | yes π⊢t₁∷θ⟼θ' | yes π⊢t₂∷θ = inferApp₁₂ π⊢t₁∷θ⟼θ' π⊢t₂∷θ
 
 {-
 identity : LambdaTerm

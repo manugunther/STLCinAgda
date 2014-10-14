@@ -73,10 +73,6 @@
 
 \section{Introducción}
 
-En este trabajo estudiamos la teoría de tipos ....
-
-Para aprender a programar con tipos dependientes en Agda nos propusimos
-implementar el Cálculo Lambda con un sistema de tipos simple sin anotaciones.
 
 \section{Teoría de tipos}
 
@@ -102,12 +98,12 @@ Con el programa que queremos implementar no obtendremos solo un resultado para n
 también una \textbf{prueba} de que el resultado es el correcto.
 
 Por cuestiones de simplicidad, no consideraremos variables de tipo, por lo que un tipo
-podrá ser el tipo básico $\odot$ o dados dos tipos $\theta_1$ y $\theta_2$, el tipo $\theta_1 \rightarrow \theta_2$.
+podrá ser el tipo básico $\odot$ o dados dos tipos $\theta_1$ y $\theta_2$, el tipo $\theta_1 \mapsto \theta_2$.
 
 Esto nos obliga a que en la abstracción lambda debemos anotar el tipo de la variable, caso contrario por ejemplo
-para el término $id = \lambda\,x\,.\,x$ no podríamos distinguir si tiene tipo $\odot \rightarrow \odot$ o 
-$(\odot \rightarrow \odot) \rightarrow (\odot \rightarrow \odot)$, etc. Anotando el tipo de la variable, 
-los términos ($\lambda\,x : \odot\,.\,x$) y ($\lambda\,x : (\odot \rightarrow \odot)\,.\,x$) son distintos
+para el término $id = \lambda\,x\,.\,x$ no podríamos distinguir si tiene tipo ($\odot \mapsto \odot$) ó 
+$(\odot \mapsto \odot) \mapsto (\odot \mapsto \odot)$, etc. Anotando el tipo de la variable
+los términos ($\lambda\,x_{\odot}\,.\,x$) y ($\lambda\,x_{\odot \mapsto \odot}\,.\,x$) son distintos
 y evitan esta ambigüedad.
 
 
@@ -121,6 +117,7 @@ module Lambda where
 open import Data.String
 -- Para la equivalencia de tipos:
 open import Relation.Binary.PropositionalEquality
+
 -- Para el tipo Bottom y la negación de un tipo:
 open import Relation.Nullary
 -- Para las 2-uplas:
@@ -131,17 +128,17 @@ open import Function
 
 \end{code}
 
-String, para representar las variables de los términos. PropositionalEquality tiene definido el tipo de la igualdad
-proposicional entre dos tipos, tal como lo explicamos en la sección 2. Nullary para tener el tipo vacío $\bot$ y
-el tipo Dec.
-Product lo necesitamos para representar los pares (variable, tipo) en los contextos. Empty tiene definido
+\agType{String}, para representar las variables de los términos. \agType{PropositionalEquality} tiene definido el tipo de la igualdad
+proposicional entre dos tipos, tal como lo explicamos en la sección 2. \agType{Nullary} para tener el tipo vacío $\bot$ y
+el tipo \agType{Dec}.
+\agType{Product} lo necesitamos para representar los pares (variable, tipo) en los contextos. \agType{Empty} tiene definido
 el eliminador de $\bot$, es decir, la función que dado $\bot$ retorna cualquier cosa. Por último
-Function tiene definido el símbolo de aplicación $\$$, el cual es útil para evitar paréntesis excesivos.
+\agType{Function} tiene definido el símbolo de aplicación $\$$, el cual es útil para evitar paréntesis excesivos.
 
 \subsection{Tipos del Cálculo Lambda}
 
 
-Como dijimos previamente, un tipo del cálculo lambda podrá ser el tipo básico $\odot$ ó un tipo $\theta_1 \rightarrow \theta_2$:
+Como dijimos previamente, un tipo del cálculo lambda podrá ser el tipo básico $\odot$ ó un tipo $\theta_1 \mapsto \theta_2$:
 
 \begin{code}
 data Type : Set where
@@ -160,16 +157,6 @@ como parámetro un tipo \agType{A} y tiene dos constructores: \textbf{yes}, que 
 un elemento de \agType{A}, o \textbf{no}, que toma un elemento de $\neg$ \agType{A}. 
 \agType{Dec} permite representar propiedades decidibles.
 
- 
-Para la igualdad de tipos en el caso que ambos sean flechas, digamos $\theta_1 \mapsto \theta_2$ y
-$\theta_1' \mapsto \theta_2'$ el resultado de la igualdad dependerá de si 
-$\theta_1$ es igual a $\theta_1'$ y $\theta_2$ es igual a $\theta_2'$. Observemos
-que si alguna de estas dos igualdades no se cumple, digamos que $\theta_1 \not \equiv \theta_1'$,
-luego el resultado será \textbf{no} seguido de una función que tome un elemento de la igualdad 
-$\theta_1 \mapsto \theta_2 \equiv \theta_1' \mapsto \theta_2'$ y retorne $\bot$. Pero como tenemos
-un elemento de $\theta_1 \not \equiv \theta_1'$
-
-
 \begin{code}
 
 cong⟼⁻¹ : ∀ {θ₁} {θ₂} {θ₁'} {θ₂'} → θ₁ ⟼ θ₂ ≡ θ₁' ⟼ θ₂' → θ₁ ≡ θ₁' × θ₂ ≡ θ₂'
@@ -182,11 +169,23 @@ _≟ₜ_ : (θ₁ : Type) → (θ₂ : Type) → Dec (θ₁ ≡ θ₂)
 θ₁ ⟼ θ₂ ≟ₜ ⊙ = no (λ ())
 θ₁ ⟼ θ₂ ≟ₜ θ₁' ⟼ θ₂' with θ₁ ≟ₜ θ₁' | θ₂ ≟ₜ θ₂'
 θ₁ ⟼ θ₂ ≟ₜ θ₁' ⟼ θ₂' | yes p | yes p' = yes (cong₂ _⟼_ p p')
-θ₁ ⟼ θ₂ ≟ₜ θ₁' ⟼ θ₂' | _ | no ¬p = no (λ θ₁⟼θ₂≡θ₁'⟼θ₂' → ¬p (proj₂ (cong⟼⁻¹ θ₁⟼θ₂≡θ₁'⟼θ₂')))
 θ₁ ⟼ θ₂ ≟ₜ θ₁' ⟼ θ₂' | no ¬p | _ = no (λ θ₁⟼θ₂≡θ₁'⟼θ₂' → ¬p (proj₁ (cong⟼⁻¹ θ₁⟼θ₂≡θ₁'⟼θ₂')))
-
+θ₁ ⟼ θ₂ ≟ₜ θ₁' ⟼ θ₂' | _ | no ¬p = no (λ θ₁⟼θ₂≡θ₁'⟼θ₂' → ¬p (proj₂ (cong⟼⁻¹ θ₁⟼θ₂≡θ₁'⟼θ₂')))
 
 \end{code}
+
+En las últimas cuatro líneas de la definición anterior tenemos el caso en que ambos
+tipos son flechas. Tenemos que analizar qué sucede con la igualdad entre
+$\theta_1$ y $\theta_1'$, y entre $\theta_2$ y $\theta_2'$. 
+
+Observemos que cuando $\theta_1$ no es igual a $\theta_1'$ tendremos un elemento de tipo
+$\neg (\theta_1 \equiv \theta_1')$, es decir que podemos obtener $\bot$ a partir
+de $(\theta_1 \equiv \theta_1')$.
+
+El resultado en este caso debe ser que los tipos $\theta$ y $\theta'$ no son iguales y para
+dar la prueba necesitamos obtener $\bot$ a partir de $\theta_1 \mapsto \theta_2 \equiv \theta_1' \mapsto \theta_2'$
+.....
+
 
 
 

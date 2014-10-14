@@ -17,6 +17,8 @@
  \usepackage{autofe}
 
  
+ \usepackage{listings}
+ 
  
  % Some characters that are not automatically defined
  % (you figure out by the latex compilation errors you get),
@@ -54,15 +56,17 @@
 
  \DefineVerbatimEnvironment
    {code}{Verbatim}
-   {} % Add fancy options here if you like.
+   {fontsize=\footnotesize} % Add fancy options here if you like.
 
-
+ %% COMMANDS
+ 
+ \newcommand{\agType}[1] {\textbf{#1}}
+   
 \title{Agda, un lenguaje con tipos dependientes}
 \author{Alejandro Gadea, Emmanuel Gunther}
 
  \begin{document}
- 
- 
+
 \maketitle
 
 
@@ -114,7 +118,6 @@ Para la implementación utilizaremos varias librerías de Agda:
 \begin{code}
 module Lambda where
 
-open import Data.Empty
 open import Data.String
 -- Para la equivalencia de tipos:
 open import Relation.Binary.PropositionalEquality
@@ -122,34 +125,75 @@ open import Relation.Binary.PropositionalEquality
 open import Relation.Nullary
 -- Para las 2-uplas:
 open import Data.Product
+open import Data.Empty
 open import Function
+
 
 \end{code}
 
 String, para representar las variables de los términos. PropositionalEquality tiene definido el tipo de la igualdad
-proposicional entre dos tipos, tal como lo explicamos en la sección 2. Nullary para tener el tipo vacío $\bot$.
-Y por último el producto que lo necesitamos para representar los pares (variable, tipo) en los contextos.
+proposicional entre dos tipos, tal como lo explicamos en la sección 2. Nullary para tener el tipo vacío $\bot$ y
+el tipo Dec.
+Product lo necesitamos para representar los pares (variable, tipo) en los contextos. Empty tiene definido
+el eliminador de $\bot$, es decir, la función que dado $\bot$ retorna cualquier cosa. Por último
+Function tiene definido el símbolo de aplicación $\$$, el cual es útil para evitar paréntesis excesivos.
 
-\subsection{Tipos y Términos del Cálculo Lambda}
-
-
-Como dijimos previamente, un tipo del cálculo lambda podrá ser el tipo básico $\odot$ ó un 
-
-Un término del cálculo Lambda podrá ser un identificador (el cual consta de una variable), una abstracción (que consta de una variable y un término) o una aplicación (dos términos).
+\subsection{Tipos del Cálculo Lambda}
 
 
-
+Como dijimos previamente, un tipo del cálculo lambda podrá ser el tipo básico $\odot$ ó un tipo $\theta_1 \rightarrow \theta_2$:
 
 \begin{code}
-
-
 data Type : Set where
   ⊙     : Type
   _⟼_  : Type → Type → Type
 
 infixr 100 _⟼_
+\end{code}
+
+Dada esta definición de tipos podemos definir la propiedad que asegura que dados
+dos tipos $\theta$ y $\theta'$ la igualdad entre ellos es decidible, es decir
+ó bien $\theta \equiv \theta'$ ó bien $\theta \not \equiv \theta'$. 
+
+Para implementarla podemos utilizar el tipo \agType{Dec} el cual toma
+como parámetro un tipo \agType{A} y tiene dos constructores: \textbf{yes}, que toma
+un elemento de \agType{A}, o \textbf{no}, que toma un elemento de $\neg$ \agType{A}. 
+\agType{Dec} permite representar propiedades decidibles.
+
+ 
+Para la igualdad de tipos en el caso que ambos sean flechas, digamos $\theta_1 \mapsto \theta_2$ y
+$\theta_1' \mapsto \theta_2'$ el resultado de la igualdad dependerá de si 
+$\theta_1$ es igual a $\theta_1'$ y $\theta_2$ es igual a $\theta_2'$. Observemos
+que si alguna de estas dos igualdades no se cumple, digamos que $\theta_1 \not \equiv \theta_1'$,
+luego el resultado será \textbf{no} seguido de una función que tome un elemento de la igualdad 
+$\theta_1 \mapsto \theta_2 \equiv \theta_1' \mapsto \theta_2'$ y retorne $\bot$. Pero como tenemos
+un elemento de $\theta_1 \not \equiv \theta_1'$
 
 
+\begin{code}
+
+cong⟼⁻¹ : ∀ {θ₁} {θ₂} {θ₁'} {θ₂'} → θ₁ ⟼ θ₂ ≡ θ₁' ⟼ θ₂' → θ₁ ≡ θ₁' × θ₂ ≡ θ₂'
+cong⟼⁻¹ refl = refl , refl
+
+-- La igualdad de tipos es decidible
+_≟ₜ_ : (θ₁ : Type) → (θ₂ : Type) → Dec (θ₁ ≡ θ₂)
+⊙ ≟ₜ ⊙ = yes refl
+⊙ ≟ₜ θ ⟼ θ' = no (λ ())
+θ₁ ⟼ θ₂ ≟ₜ ⊙ = no (λ ())
+θ₁ ⟼ θ₂ ≟ₜ θ₁' ⟼ θ₂' with θ₁ ≟ₜ θ₁' | θ₂ ≟ₜ θ₂'
+θ₁ ⟼ θ₂ ≟ₜ θ₁' ⟼ θ₂' | yes p | yes p' = yes (cong₂ _⟼_ p p')
+θ₁ ⟼ θ₂ ≟ₜ θ₁' ⟼ θ₂' | _ | no ¬p = no (λ θ₁⟼θ₂≡θ₁'⟼θ₂' → ¬p (proj₂ (cong⟼⁻¹ θ₁⟼θ₂≡θ₁'⟼θ₂')))
+θ₁ ⟼ θ₂ ≟ₜ θ₁' ⟼ θ₂' | no ¬p | _ = no (λ θ₁⟼θ₂≡θ₁'⟼θ₂' → ¬p (proj₁ (cong⟼⁻¹ θ₁⟼θ₂≡θ₁'⟼θ₂')))
+
+
+\end{code}
+
+
+
+Un término del cálculo Lambda podrá ser un identificador (el cual consta de una variable), 
+una abstracción (que consta de una variable y un término) o una aplicación (dos términos):
+
+\begin{code}
 Var : Set
 Var = String
 
@@ -162,42 +206,10 @@ infixl 100 _●_
 
 \end{code}
 
-Como primera aproximación a lo deseado, implementaremos tipos sin variables. Un Tipo podrá ser el "unit" o uno conformado por dos tipos el cual representará a las funciones:
-
-\begin{code}
-
-
-
-{-fₜ : Type → Type
-fₜ (θ₀ ⟼ θ₁) = θ₀
-fₜ _ = {!!}
-
-sₜ : Type → Type
-sₜ (θ₀ ⟼ θ₁) = θ₁
-sₜ _ = {!!}
--}
-\end{code}
 
 
 Necesitaremos saber si dos tipos son iguales. Para eso definimos una función que dados dos tipos retorna si son o no iguales. El tipo de retorno es Decidable, el cual dada una expresión puede "decidir" si cumple alguna propiedad. En nuestro caso la propiedad es la igualdad proposicional:
 
-\begin{code}
-
-cong⟼⁻¹ : ∀ {θ₁} {θ₂} {θ₁'} {θ₂'} → θ₁ ⟼ θ₂ ≡ θ₁' ⟼ θ₂' → θ₁ ≡ θ₁' × θ₂ ≡ θ₂'
-cong⟼⁻¹ refl = refl , refl
-
--- La igualdad de tipos es decidible
-_≟ₜ_ : (θ : Type) → (θ' : Type) → Dec (θ ≡ θ')
-⊙ ≟ₜ ⊙ = yes refl
-⊙ ≟ₜ θ ⟼ θ' = no (λ ())
-θ₁ ⟼ θ₂ ≟ₜ ⊙ = no (λ ())
-θ₁ ⟼ θ₂ ≟ₜ θ₁' ⟼ θ₂' with θ₁ ≟ₜ θ₁' | θ₂ ≟ₜ θ₂'
-θ₁ ⟼ θ₂ ≟ₜ θ₁' ⟼ θ₂' | yes p | yes p' = yes (cong₂ _⟼_ p p')
-θ₁ ⟼ θ₂ ≟ₜ θ₁' ⟼ θ₂' | _ | no ¬p = no (λ θ₁⟼θ₂≡θ₁'⟼θ₂' → ¬p (proj₂ (cong⟼⁻¹ θ₁⟼θ₂≡θ₁'⟼θ₂')))
-θ₁ ⟼ θ₂ ≟ₜ θ₁' ⟼ θ₂' | no ¬p | _ = no (λ θ₁⟼θ₂≡θ₁'⟼θ₂' → ¬p (proj₁ (cong⟼⁻¹ θ₁⟼θ₂≡θ₁'⟼θ₂')))
-
-
-\end{code}
 
 Para inferir el tipo de un término necesitamos asignarle tipos a las variables libres que ocurren en el mismo. Para esto definimos un "contexto", el cual puede ser vacío o puede consistir de agregar un par (variable,tipo) a otro contexto. 
 
@@ -319,6 +331,33 @@ changeCtx (π₀⊢t∷θ ∧ π₀⊢t∷θ₁ ∣ₐ) π₀≈π₁ refl =
         (changeCtx π₀⊢t∷θ π₀≈π₁ refl) ∧ (changeCtx π₀⊢t∷θ₁ π₀≈π₁ refl) ∣ₐ
 
 
+uniqueTypeVar : ∀ {π} {x} {θ} {θ'} → (x  , θ) ∈ π → (x , θ') ∈ π → θ ≡ θ'
+uniqueTypeVar (inHead x θ π a∉π x≡a θ≡θₐ) 
+              (inHead .x θ' .π .a∉π x≡a' θ'≡θₐ) = trans θ≡θₐ (sym θ'≡θₐ)
+uniqueTypeVar (inHead x θ π a∉π x≡a θ≡θₐ) 
+              (inTail .x θ' .π a θ'' x,θ'∈π .a∉π) = 
+                    ⊥-elim (∉↝ a∉π (θ' , subst (λ z → (z , θ') ∈ π) x≡a x,θ'∈π))
+uniqueTypeVar (inTail x θ' π a θ'' x,θ'∈π a∉π)
+              (inHead .x θ .π .a∉π x≡a θ≡θₐ) = 
+                    ⊥-elim (∉↝ a∉π (θ' , subst (λ z → (z , θ') ∈ π) x≡a x,θ'∈π))
+uniqueTypeVar (inTail x θ π x' θ'' x,θ∈π x'∉π) 
+              (inTail .x θ' .π .x' .θ'' x,θ'∈π .x'∉π) = 
+                                                      uniqueTypeVar x,θ∈π x,θ'∈π
+
+
+-- Si un termino se puede tipar con θ y θ', estos son iguales
+uniqueType : ∀ {π} {t} {θ} {θ'} → π ⊢ t ∷ θ → π ⊢ t ∷ θ' → θ ≡ θ'
+uniqueType (x,θ∈π ∣ᵥ) (x,θ'∈π ∣ᵥ) = uniqueTypeVar x,θ∈π x,θ'∈π
+uniqueType (_∣ₗ {θ = θ} π⊢t∷θ) (_∣ₗ {θ = .θ} π⊢t∷θ') = 
+                cong (_⟼_ θ) $ uniqueType π⊢t∷θ $ changeCtx π⊢t∷θ' (ctxEq reflCtx) refl
+uniqueType {θ = θ} {θ' = θ'} 
+           (_∧_∣ₐ {θ' = .θ} π⊢t∷θ₁⟼θ₂ π⊢t∷θ₁)
+           (_∧_∣ₐ π⊢t∷θ₁'⟼θ₂' π⊢t∷θ₁') = 
+                           proj₂ $ cong⟼⁻¹ (trans (uniqueType π⊢t∷θ₁⟼θ₂ π⊢t∷θ₁'⟼θ₂') 
+                                           (cong (λ θ → θ ⟼ θ') (sym (uniqueType π⊢t∷θ₁ π⊢t∷θ₁'))))
+
+
+
 -- En esta función probamos que si no existe θ' tal que (v,θ') ∈ π y
 -- v≠w, entonces no existe θ' tal que (v,θ') ∈ ((w , θ) ▷ π)
 aux'' : (π : Ctx) → (v : Var) → (w : Var) → (θ : Type) → ¬ (v ≡ w) →
@@ -358,46 +397,6 @@ inferL t↑ ( ⊙ , () )
 inferL2 : ∀ {v} {θᵥ} {θ} {π} {t} → (v , θ) ∈ π → ¬ (∃ (λ θ' → π ⊢ λ' v ∶ θᵥ ⟶ t ∷ θ'))
 inferL2 v∈π (⊙ , ())
 inferL2 {θ = θ} v∈π (θᵥ ⟼ θ' , _∣ₗ {p = v∉π} π⊢λ't∷θ') = ∉↝ v∉π (θ , v∈π)
-
---  _∣ᵥ : ∀ {x} {θ} {π} →
---          ( x  ,′ θ ) ∈ π → (π ⊢ ″ x ″ ∷ θ)
---  _∣ₗ : ∀ {t} {x} {θ} {θ'} {π} {p : x ∉ π} → 
---          (( x  , θ ) ▷ π ｢ p ｣  ⊢ t ∷ θ') →
---          (π ⊢ (λ' x ∶ θ ⟶ t) ∷ (θ ⟼ θ') )
-
-
-
-uniqueTypeVar : ∀ {π} {x} {θ} {θ'} → (x  , θ) ∈ π → (x , θ') ∈ π → θ ≡ θ'
-uniqueTypeVar (inHead x θ π a∉π x≡a θ≡θₐ) 
-              (inHead .x θ' .π .a∉π x≡a' θ'≡θₐ) = trans θ≡θₐ (sym θ'≡θₐ)
-uniqueTypeVar (inHead x θ π a∉π x≡a θ≡θₐ) 
-              (inTail .x θ' .π a θ'' x,θ'∈π .a∉π) = 
-                    ⊥-elim (∉↝ a∉π (θ' , subst (λ z → (z , θ') ∈ π) x≡a x,θ'∈π))
-uniqueTypeVar (inTail x θ' π a θ'' x,θ'∈π a∉π)
-              (inHead .x θ .π .a∉π x≡a θ≡θₐ) = 
-                    ⊥-elim (∉↝ a∉π (θ' , subst (λ z → (z , θ') ∈ π) x≡a x,θ'∈π))
-uniqueTypeVar (inTail x θ π x' θ'' x,θ∈π x'∉π) 
-              (inTail .x θ' .π .x' .θ'' x,θ'∈π .x'∉π) = 
-                                                      uniqueTypeVar x,θ∈π x,θ'∈π
-
-
--- Si un termino se puede tipar con θ y θ', estos son iguales
-uniqueType : ∀ {π} {t} {θ} {θ'} → π ⊢ t ∷ θ → π ⊢ t ∷ θ' → θ ≡ θ'
-uniqueType (x,θ∈π ∣ᵥ) (x,θ'∈π ∣ᵥ) = uniqueTypeVar x,θ∈π x,θ'∈π
-uniqueType (_∣ₗ {θ = θ} π⊢t∷θ) (_∣ₗ {θ = .θ} π⊢t∷θ') = 
-                cong (_⟼_ θ) $ uniqueType π⊢t∷θ $ changeCtx π⊢t∷θ' (ctxEq reflCtx) refl
-uniqueType {θ = θ} {θ' = θ'} 
-           (_∧_∣ₐ {θ' = .θ} π⊢t∷θ₁⟼θ₂ π⊢t∷θ₁)
-           (_∧_∣ₐ π⊢t∷θ₁'⟼θ₂' π⊢t∷θ₁') = 
-                           proj₂ $ cong⟼⁻¹ (trans (uniqueType π⊢t∷θ₁⟼θ₂ π⊢t∷θ₁'⟼θ₂') 
-                                           (cong (λ θ → θ ⟼ θ') (sym (uniqueType π⊢t∷θ₁ π⊢t∷θ₁'))))
-
-
---  _∧_∣ₐ : ∀ {t₁} {t₂} {θ} {θ'} {π} →
- --         (π ⊢ t₁ ∷ (θ ⟼ θ')) →
-   --       (π ⊢ t₂ ∷ θ) →
-     --     (π ⊢ (t₁ ● t₂) ∷ θ')
-
 
 inferApp₁₂ : ∀ {π} {t₁} {t₂} → 
              ∃ (λ θ → π ⊢ t₁ ∷ θ) →
@@ -446,11 +445,6 @@ inferType = infer ø
 
 identity : LambdaTerm
 identity = λ' "x" ∶ ⊙  ⟶  ″ "x" ″ 
-
-
-
-θ : Type
-θ = (⊙ ⟼ ⊙) ⟼ ⊙ ⟼ ⊙
 
 twice : LambdaTerm
 twice = λ' "f" ∶ (⊙ ⟼ ⊙) ⟶ λ' "x" ∶ ⊙  ⟶ ″ "f" ″ ● (″ "f" ″ ● ″ "x" ″)

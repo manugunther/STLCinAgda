@@ -44,6 +44,8 @@
  \DeclareUnicodeCharacter{7525}{\ensuremath{_v}}
  \DeclareUnicodeCharacter{8343}{\ensuremath{_l}}
  \DeclareUnicodeCharacter{8336}{\ensuremath{_a}}
+ \DeclareUnicodeCharacter{8604}{\ensuremath{\hookleftarrow}}
+ \DeclareUnicodeCharacter{8605}{\ensuremath{\hookrightarrow}}
  
 
  % Add more as you need them (shouldn’t happen often).
@@ -152,42 +154,35 @@ Dada esta definición de tipos podemos definir la propiedad que asegura que dado
 dos tipos $\theta$ y $\theta'$ la igualdad entre ellos es decidible, es decir
 ó bien $\theta \equiv \theta'$ ó bien $\theta \not \equiv \theta'$. 
 
-Para implementarla podemos utilizar el tipo \agType{Dec} el cual toma
-como parámetro un tipo \agType{A} y tiene dos constructores: \textbf{yes}, que toma
-un elemento de \agType{A}, o \textbf{no}, que toma un elemento de $\neg$ \agType{A}. 
-\agType{Dec} permite representar propiedades decidibles.
+Para la implementación procedemos de la misma manera en que definimos la igualdad
+de los números naturales en la sección 3, mediante el tipo \agType{Dec}.
+
+Necesitamos poder obtener $\theta_1 \equiv \theta_1'$ y $\theta_2 \equiv \theta_2'$
+a partir de $\theta_1 ⟼ \theta_2 \equiv \theta_1' ⟼ \theta_2'$. La función
+$cong⟼⁻¹$ define exactamente eso (notemos que podemos definirla porque $(⟼)$ es
+inyectiva):
 
 \begin{code}
 
 cong⟼⁻¹ : ∀ {θ₁} {θ₂} {θ₁'} {θ₂'} → θ₁ ⟼ θ₂ ≡ θ₁' ⟼ θ₂' → θ₁ ≡ θ₁' × θ₂ ≡ θ₂'
 cong⟼⁻¹ refl = refl , refl
 
--- La igualdad de tipos es decidible
 _≟ₜ_ : (θ₁ : Type) → (θ₂ : Type) → Dec (θ₁ ≡ θ₂)
-⊙ ≟ₜ ⊙ = yes refl
-⊙ ≟ₜ θ ⟼ θ' = no (λ ())
-θ₁ ⟼ θ₂ ≟ₜ ⊙ = no (λ ())
+⊙ ≟ₜ ⊙                  = yes refl
+⊙ ≟ₜ θ ⟼ θ'            = no (λ ())
+θ₁ ⟼ θ₂ ≟ₜ ⊙           = no (λ ())
 θ₁ ⟼ θ₂ ≟ₜ θ₁' ⟼ θ₂' with θ₁ ≟ₜ θ₁' | θ₂ ≟ₜ θ₂'
 θ₁ ⟼ θ₂ ≟ₜ θ₁' ⟼ θ₂' | yes p | yes p' = yes (cong₂ _⟼_ p p')
-θ₁ ⟼ θ₂ ≟ₜ θ₁' ⟼ θ₂' | no ¬p | _ = no (λ θ₁⟼θ₂≡θ₁'⟼θ₂' → ¬p (proj₁ (cong⟼⁻¹ θ₁⟼θ₂≡θ₁'⟼θ₂')))
-θ₁ ⟼ θ₂ ≟ₜ θ₁' ⟼ θ₂' | _ | no ¬p = no (λ θ₁⟼θ₂≡θ₁'⟼θ₂' → ¬p (proj₂ (cong⟼⁻¹ θ₁⟼θ₂≡θ₁'⟼θ₂')))
+θ₁ ⟼ θ₂ ≟ₜ θ₁' ⟼ θ₂' | no ¬p | _      = 
+      no (λ θ₁⟼θ₂≡θ₁'⟼θ₂' → ¬p (proj₁ (cong⟼⁻¹ θ₁⟼θ₂≡θ₁'⟼θ₂')))
+θ₁ ⟼ θ₂ ≟ₜ θ₁' ⟼ θ₂' | _ | no ¬p      = 
+      no (λ θ₁⟼θ₂≡θ₁'⟼θ₂' → ¬p (proj₂ (cong⟼⁻¹ θ₁⟼θ₂≡θ₁'⟼θ₂')))
 
 \end{code}
 
-En las últimas cuatro líneas de la definición anterior tenemos el caso en que ambos
-tipos son flechas. Tenemos que analizar qué sucede con la igualdad entre
-$\theta_1$ y $\theta_1'$, y entre $\theta_2$ y $\theta_2'$. 
+\subsection{Términos del Cálculo Lambda}
 
-Observemos que cuando $\theta_1$ no es igual a $\theta_1'$ tendremos un elemento de tipo
-$\neg (\theta_1 \equiv \theta_1')$, es decir que podemos obtener $\bot$ a partir
-de $(\theta_1 \equiv \theta_1')$.
-
-El resultado en este caso debe ser que los tipos $\theta$ y $\theta'$ no son iguales y para
-dar la prueba necesitamos obtener $\bot$ a partir de $\theta_1 \mapsto \theta_2 \equiv \theta_1' \mapsto \theta_2'$
-.....
-
-
-
+Ahora procedemos a definir los términos del cálculo lambda.
 
 Un término del cálculo Lambda podrá ser un identificador (el cual consta de una variable), 
 una abstracción (que consta de una variable y un término) o una aplicación (dos términos):
@@ -206,39 +201,41 @@ infixl 100 _●_
 \end{code}
 
 
+\subsection{Contextos de tipado}
 
-Necesitaremos saber si dos tipos son iguales. Para eso definimos una función que dados dos tipos retorna si son o no iguales. El tipo de retorno es Decidable, el cual dada una expresión puede "decidir" si cumple alguna propiedad. En nuestro caso la propiedad es la igualdad proposicional:
+Para poder dar un tipo a un término tenemos que asignarle tipos a las variables.
+Necesitamos entonces definir un contexto de asignación de variables a tipos, en el cual no queremos que
+una misma variable ocurra dos veces.
 
-
-Para inferir el tipo de un término necesitamos asignarle tipos a las variables libres que ocurren en el mismo. Para esto definimos un "contexto", el cual puede ser vacío o puede consistir de agregar un par (variable,tipo) a otro contexto. 
-
-Cada variable puede aparecer solo una vez en el contexto (sólo puede tener un tipo), por lo tanto al agregar una variable $x$ con algún tipo al contexto $π$, pediremos también una "prueba" de que $x$ no está en el contexto. Estas "pruebas" las implementamos mediante un tipo de dato que representa justamente lo que queremos: Dada una variable y un contexto, o bien la variable no se encuentra en el contexto porque este es vacío, o bien la variable no se encuentra porque es distinta a la primera que ocurre y tampoco ocurre en el resto del contexto:
-
-
-También necesitaremos expresar cuando una variable con un tipo sí pertenece a un contexto. Para esto definimos otro tipo de dato. Un par (variable,tipo) puede estar en la "cabeza" de un contexto, o en la "cola".
-
+Definimos el tipo \agType{Ctx} junto con un tipo que dada una variable $x$ y un contexto $\pi$, expresa que 
+$x$ no ocurre en $\pi$:
 
 \begin{code}
-
-
-
 mutual
   data Ctx : Set where
     ø      : Ctx
     _▷_｢_｣ : (t : Var × Type) → (π : Ctx) → (p : (proj₁ t) ∉ π) → Ctx
 
   data _∉_ : Var → Ctx → Set where
-    notInEmpty  : {x : Var} → x ∉ ø
-    notInNEmpty : {x' : Var} {θ : Type} (x : Var) → (π : Ctx) → x ∉ π →
+    ∉ø  : {x : Var} → x ∉ ø
+    ∉¬ø : {x' : Var} {θ : Type} (x : Var) → (π : Ctx) → x ∉ π →
                   (p : x' ∉ π) → ¬ (x ≡ x') →
                  x ∉ ((x' , θ) ▷ π ｢ p ｣)
+\end{code}
+         
+Si una variable $x$ no ocurre en un contexto $\pi$ es porque $\pi$ es vacío
+o porque $x$ es distinta a la variable de la cabeza de $\pi$ y no ocurre en la cola. Esto
+expresan los constructores $∉ø$ y $∉¬ø$ respectivamente.
+         
+Con esta definición podemos definir una relación de equivalencia entre dos
+contextos:
 
+\begin{code}
 data _≈_ : Ctx → Ctx → Set where
   emptyCtxEq : ø ≈ ø
   ctxEq      : ∀ {v} {θ} {π} {π'} → {p : v ∉ π} {p' : v ∉ π'} → 
                π ≈ π' → (v , θ) ▷ π ｢ p ｣ ≈ (v , θ) ▷ π' ｢ p' ｣
 
--- ≈ es relacion de equivalencia.
 reflCtx : ∀ {π} → π ≈ π
 reflCtx {ø} = emptyCtxEq
 reflCtx {t ▷ π ｢ p ｣} = ctxEq (reflCtx {π})
@@ -250,11 +247,20 @@ transCtx (ctxEq π₀≈π₁) (ctxEq π₁≈π₂) = ctxEq (transCtx π₀≈�
 symCtx : ∀ {π₀} {π₁} → π₀ ≈ π₁ → π₁ ≈ π₀
 symCtx emptyCtxEq = emptyCtxEq
 symCtx (ctxEq π₀≈π₁) = ctxEq (symCtx π₀≈π₁)
-
 \end{code}
 
-\begin{code}
+Esto nos permite considerar iguales a dos contextos que tengan los mismos
+pares (variable,tipo) pero que las pruebas que aseguran que cada variable no ocurre
+en el resto no sean exactamente las mismas (en la definción de $ctxEq$, $p$ puede
+ser distinto de $p'$ pero ambos expresan que la variable no pertenece al resto del contexto).
+\medskip
 
+Antes de poder definir un juicio de tipado necesitamos una noción más. Si pensamos en la regla
+para tipar una variable tenemos que una variable $x$ tiene tipo $\theta$ si el par $(x,\theta)$
+pertenece al contexto. Por lo tanto necesitamos definir cuándo un par pertenece
+a un contexto:
+
+\begin{code}
 data _∈_ : Var × Type → Ctx → Set where
   inHead : ∀ {y} {θ'} → (x : Var) → (θ : Type) → (π : Ctx) → 
              (p : y ∉ π) → x ≡ y → θ ≡ θ' → 
@@ -262,19 +268,64 @@ data _∈_ : Var × Type → Ctx → Set where
   inTail : (x : Var) → (θ : Type) → (π : Ctx) → (y : Var) → 
               (θ' : Type) → ( x  , θ ) ∈ π → (p : y ∉ π) → 
                  ( x  , θ ) ∈ (( y  , θ' ) ▷ π ｢ p ｣)
+\end{code}
 
+Si el par $(x,\theta)$ pertenece a $\pi$ es porque o bien está en la cabeza o bien está en la cola
+y esto expresan ambos constructores.
+\medskip
 
--- Conversión entre v ∉ π y ¬ (∃ (λ θ → (v , θ) ∈ π))
+Observemos que este tipo de dato que acabamos de definir debería ser opuesto al que expresa que una variable
+no pertenece a un contexto, que definimos previamente.
+Es decir,  $x ∉ \pi$ si y solo si no existe $\theta$ tal que $(v , θ) ∈ π$. 
+
+Dados una variable $v$ y un contexto $\pi$ podemos definir entonces un isomorfismo entre los tipos
+$v ∉ \pi$ y $¬ (∃ (λ θ → (v , θ) ∈ π))$.
+
+En uno de los lados del isomorfismo tenemos que obtener un elemento
+de $¬ (∃ (λ θ → (v , θ) ∈ π))$ a partir de uno de $v ∉ π$. Esto es lo mismo
+que obtener $\bot$ a partir de $v ∉ π$ y de un par $(\theta,p)$ (donde $\theta$ es algún tipo
+y $p$ algún elemento de $(v,\theta)\in\pi$).
+
+\begin{code}
 ∉↝ : {v : Var} {π : Ctx} → v ∉ π → ¬ (∃ (λ θ → (v , θ) ∈ π))
-∉↝ notInEmpty (_ , ())
-∉↝ (notInNEmpty v π v∉π v'∉π v≠v') 
-   (θ , inHead .v .θ .π .v'∉π v=v' _) = v≠v' v=v'
-∉↝ (notInNEmpty v π v∉π v'∉π v≠v') 
-   (θ , inTail .v .θ .π v' θ' v∈π .v'∉π) = (∉↝ v∉π) (θ , v∈π)
+∉↝ {π = ø} ∉ø (_ , ())
+∉↝ {π = (v' , θ') ▷ π' ｢ v'∉π' ｣} (∉¬ø v .π' v∉π' .v'∉π' v≠v') 
+   (θ , inHead .v .θ .π' .v'∉π' v=v' _)    = v≠v' v=v'
+∉↝ {π = (v' , θ') ▷ π' ｢ v'∉π' ｣} (∉¬ø v .π' v∉π' .v'∉π' v≠v') 
+   (θ , inTail .v .θ .π' .v' .θ' v∈π' .v'∉π') = (∉↝ v∉π') (θ , v∈π')
+\end{code}
+   
+En la definición realizamos pattern matching sobre $v ∉ π$ y sobre
+$∃ (λ θ → (v , θ) ∈ π)$.
 
+El primero de los casos es cuando tenemos que $v$ no ocurre en $\pi$
+porque éste es vacío, es decir, tenemos el constructor $∉ø$. Esto
+nos deja un pattern absurdo para el segundo parámetro de la función ya
+que no podemos construir un elemento de $(v , θ) ∈ ø$.
+
+El siguiente caso a contemplar es cuando $v$ no está en el contexto $\pi = ( v'  , θ' ) ▷ π' ｢ v'∉π' ｣$,
+representado por el constructor $∉¬ø$. Observemos que para definir este caso de pattern matching
+tendremos un elemento de $\neg (v \equiv v')$ y uno de $v ∉ \pi'$.
+
+Dentro de este caso tenemos dos opciones: $(v , θ) ∈ π$ para algún $\theta$ porque el par
+se encuentra en la cabeza de $\pi$, o porque se encuentra en la cola, y esto está expresado en los dos
+casos de pattern matching. En el primero de ellos observemos que tenemos un elemento de
+$v \equiv v'$, por lo cual podremos obtener $\bot$ ya que teníamos también que $\neg (v \equiv v')$.
+
+En el último caso el constructor $inTail$ contiene un elemento de $v \in \pi'$ pero también teníamos
+uno de $v ∉ \pi'$ por lo que podremos obtener $\bot$ utilizando una llamada recursiva.
+\medskip
+
+En el otro lado del isomorfismo tenemos que obtener un elemento
+de $v ∉ π$ a partir de $¬ (∃ (λ θ → (v , θ) ∈ π))$. Es decir, dado que tenemos
+una función que obtiene $\bot$ a partir de un par $(\theta,p)$ (donde $p$ es un elemento
+de $(v , θ) ∈ π$), tendremos que obtener uno de $v ∉ π$:
+
+\begin{code}
+   
 ∉↜ : {v : Var} {π : Ctx} → ¬ (∃ (λ θ → (v , θ) ∈ π)) → v ∉ π
-∉↜ {v} {ø} t↑ = notInEmpty
-∉↜ {v} {t ▷ π ｢ p ｣} t↑ = notInNEmpty v π (∉↜ (g t↑)) p (f t↑)
+∉↜ {v} {ø} t↑           = ∉ø
+∉↜ {v} {t ▷ π ｢ p ｣} t↑ = ∉¬ø v π (∉↜ (g t↑)) p (f t↑)
   where
     f : {v : Var} {π : Ctx} {v' : Var} {θ' : Type} {p : v' ∉ π} →
       ¬ (∃ (λ θ → (v , θ) ∈ ((v' , θ') ▷ π ｢ p ｣))) →
@@ -287,9 +338,13 @@ data _∈_ : Var × Type → Ctx → Set where
       ¬ (∃ (λ θ → (v , θ) ∈ π))
     g {v} {π} {v'} {θ'} {p} t↑ (θ , v∈π) = 
       t↑ (θ , (inTail v θ π v' θ' v∈π p))
+\end{code}
 
+blabla
 
-  
+\subsection{Juicios de tipado}
+
+\begin{code}
 data _⊢_∷_ : Ctx → LambdaTerm → Type → Set where
   _∣ᵥ : ∀ {x} {θ} {π} →
           ( x  ,′ θ ) ∈ π → (π ⊢ ″ x ″ ∷ θ)
@@ -307,8 +362,8 @@ data _⊢_∷_ : Ctx → LambdaTerm → Type → Set where
 change∉ : ∀ {v} {π₀} {π₁} → π₀ ≈ π₁ → v ∉ π₀ → v ∉ π₁
 change∉ emptyCtxEq notInEmpty = notInEmpty
 change∉ {v} {t ▷ π₀ ｢ p ｣} {.t ▷ π₁ ｢ p' ｣} 
-            (ctxEq e) (notInNEmpty .v .π₀ p₀ .p x) = 
-              notInNEmpty v π₁ (change∉ e p₀) p' x
+            (ctxEq e) (∉¬ø .v .π₀ p₀ .p x) = 
+              ∉¬ø v π₁ (change∉ e p₀) p' x
 
 
 changeCtxVar : ∀ {x} {θ} {θ'} {π₀} {π₁} → 
@@ -354,9 +409,11 @@ uniqueType {θ = θ} {θ' = θ'}
            (_∧_∣ₐ π⊢t∷θ₁'⟼θ₂' π⊢t∷θ₁') = 
                            proj₂ $ cong⟼⁻¹ (trans (uniqueType π⊢t∷θ₁⟼θ₂ π⊢t∷θ₁'⟼θ₂') 
                                            (cong (λ θ → θ ⟼ θ') (sym (uniqueType π⊢t∷θ₁ π⊢t∷θ₁'))))
+\end{code}
 
+\subsection{Inferencia de tipos}
 
-
+\begin{code}
 -- En esta función probamos que si no existe θ' tal que (v,θ') ∈ π y
 -- v≠w, entonces no existe θ' tal que (v,θ') ∈ ((w , θ) ▷ π)
 aux'' : (π : Ctx) → (v : Var) → (w : Var) → (θ : Type) → ¬ (v ≡ w) →

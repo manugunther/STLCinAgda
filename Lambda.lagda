@@ -155,12 +155,7 @@ dos tipos $\theta$ y $\theta'$ la igualdad entre ellos es decidible, es decir
 ó bien $\theta \equiv \theta'$ ó bien $\theta \not \equiv \theta'$. 
 
 Para la implementación procedemos de la misma manera en que definimos la igualdad
-de los números naturales en la sección 3, mediante el tipo \agType{Dec}.
-
-Necesitamos poder obtener $\theta_1 \equiv \theta_1'$ y $\theta_2 \equiv \theta_2'$
-a partir de $\theta_1 ⟼ \theta_2 \equiv \theta_1' ⟼ \theta_2'$. La función
-$cong⟼⁻¹$ define exactamente eso (notemos que podemos definirla porque $(⟼)$ es
-inyectiva):
+de los números naturales en la sección 3, mediante el tipo \agType{Dec}:
 
 \begin{code}
 
@@ -180,21 +175,37 @@ _≟ₜ_ : (θ₁ : Type) → (θ₂ : Type) → Dec (θ₁ ≡ θ₂)
 
 \end{code}
 
+Definimos la igualdad entre dos tipos mediante recursión. Observemos que en el caso
+que tengamos dos tipos $θ₁ ⟼ θ₂$ y $θ₁' ⟼ θ₂'$, estos serán iguales si
+$θ₁ \equiv θ₁'$ y $θ₂ \equiv θ₂'$. En el caso que alguna de estas dos igualdades no se cumpla,
+tendremos que construir una función que dado un elemento de $θ₁ ⟼ θ₂ \equiv θ₁' ⟼ θ₂'$
+devuelva $\bot$. 
+
+Si no se cumple que $θ₁ \equiv θ₁'$ entonces tenemos una función que devuelve
+$\bot$ a partir de $θ₁ \equiv θ₁'$, que en la implementación la llamamos $¬p$.
+Entonces si pudiéramos obtener $θ₁ \equiv θ₁'$ a partir de $θ₁ ⟼ θ₂ \equiv θ₁' ⟼ θ₂'$
+luego aplicamos $¬p$ y tenemos el resultado $\bot$ que queríamos.
+
+Pero observemos que como el constructor $⟼$ es una función inyectiva, si se da que 
+$θ₁ ⟼ θ₂ ≡ θ₁' ⟼ θ₂'$ entonces $θ₁ ≡ θ₁'$ y $θ₂ ≡ θ₂'$. La función $cong⟼⁻¹$ expresa
+exactamente esto y nos permite completar la definición de la igualdad de tipos.
+
 \subsection{Términos del Cálculo Lambda}
 
 Ahora procedemos a definir los términos del cálculo lambda.
 
 Un término del cálculo Lambda podrá ser un identificador (el cual consta de una variable), 
-una abstracción (que consta de una variable y un término) o una aplicación (dos términos):
+una abstracción (que consta de una variable, el tipo con el que está anotada dicha variable y un término) 
+o una aplicación (dos términos):
 
 \begin{code}
 Var : Set
 Var = String
 
 data LambdaTerm : Set where
-  ″_″      : Var → LambdaTerm
+  ″_″        : Var → LambdaTerm
   λ'_∶_⟶_  : Var → Type → LambdaTerm → LambdaTerm
-  _●_      : LambdaTerm → LambdaTerm → LambdaTerm
+  _●_        : LambdaTerm → LambdaTerm → LambdaTerm
  
 infixl 100 _●_
 
@@ -217,15 +228,18 @@ mutual
     _▷_｢_｣ : (t : Var × Type) → (π : Ctx) → (p : (proj₁ t) ∉ π) → Ctx
 
   data _∉_ : Var → Ctx → Set where
-    ∉ø  : {x : Var} → x ∉ ø
-    ∉¬ø : {x' : Var} {θ : Type} (x : Var) → (π : Ctx) → x ∉ π →
-                  (p : x' ∉ π) → ¬ (x ≡ x') →
-                 x ∉ ((x' , θ) ▷ π ｢ p ｣)
+    ∉ø  : ∀ {x} → x ∉ ø
+    ∉¬ø : ∀ {x'} {θ} {x} {π} {p} → 
+            x ∉ π →  ¬ (x ≡ x') →
+            x ∉ ((x' , θ) ▷ π ｢ p ｣)
 \end{code}
+ 
+Un contexto bien formado entonces será o bien el vacío, o un contexto 
+$\pi$ al que se le agrega un par $(x,\theta)$ con una prueba de que $x$ no ocurre en $\pi$.
          
 Si una variable $x$ no ocurre en un contexto $\pi$ es porque $\pi$ es vacío
-o porque $x$ es distinta a la variable de la cabeza de $\pi$ y no ocurre en la cola. Esto
-expresan los constructores $∉ø$ y $∉¬ø$ respectivamente.
+o porque $x$ no ocurre en la cola y es distinta a la variable de la cabeza de $\pi$. Esto
+expresan los constructores $∉ø$ y $∉¬ø$ respectivamente del tipo $∉$.
          
 Con esta definición podemos definir una relación de equivalencia entre dos
 contextos:
@@ -237,15 +251,15 @@ data _≈_ : Ctx → Ctx → Set where
                π ≈ π' → (v , θ) ▷ π ｢ p ｣ ≈ (v , θ) ▷ π' ｢ p' ｣
 
 reflCtx : ∀ {π} → π ≈ π
-reflCtx {ø} = emptyCtxEq
+reflCtx {ø}           = emptyCtxEq
 reflCtx {t ▷ π ｢ p ｣} = ctxEq (reflCtx {π})
 
 transCtx : ∀ {π₀} {π₁} {π₂} → π₀ ≈ π₁ → π₁ ≈ π₂ → π₀ ≈ π₂
-transCtx emptyCtxEq emptyCtxEq = emptyCtxEq
+transCtx emptyCtxEq emptyCtxEq        = emptyCtxEq
 transCtx (ctxEq π₀≈π₁) (ctxEq π₁≈π₂) = ctxEq (transCtx π₀≈π₁ π₁≈π₂)
 
 symCtx : ∀ {π₀} {π₁} → π₀ ≈ π₁ → π₁ ≈ π₀
-symCtx emptyCtxEq = emptyCtxEq
+symCtx emptyCtxEq    = emptyCtxEq
 symCtx (ctxEq π₀≈π₁) = ctxEq (symCtx π₀≈π₁)
 \end{code}
 
@@ -255,19 +269,17 @@ en el resto no sean exactamente las mismas (en la definción de $ctxEq$, $p$ pue
 ser distinto de $p'$ pero ambos expresan que la variable no pertenece al resto del contexto).
 \medskip
 
-Antes de poder definir un juicio de tipado necesitamos una noción más. Si pensamos en la regla
+Para poder definir juicios de tipado necesitamos una noción más. Si pensamos en la regla
 para tipar una variable tenemos que una variable $x$ tiene tipo $\theta$ si el par $(x,\theta)$
-pertenece al contexto. Por lo tanto necesitamos definir cuándo un par pertenece
+pertenece al contexto de tipado. Por lo tanto necesitamos definir cuándo un par pertenece
 a un contexto:
 
 \begin{code}
 data _∈_ : Var × Type → Ctx → Set where
-  inHead : ∀ {y} {θ'} → (x : Var) → (θ : Type) → (π : Ctx) → 
-             (p : y ∉ π) → x ≡ y → θ ≡ θ' → 
-                       ( x  , θ ) ∈ (( y  , θ' ) ▷ π ｢ p ｣)
-  inTail : (x : Var) → (θ : Type) → (π : Ctx) → (y : Var) → 
-              (θ' : Type) → ( x  , θ ) ∈ π → (p : y ∉ π) → 
-                 ( x  , θ ) ∈ (( y  , θ' ) ▷ π ｢ p ｣)
+  inHead : ∀ {y} {θ'} {x} {θ} {π} {y∉π} → x ≡ y → θ ≡ θ' → 
+              ( x  , θ ) ∈ (( y  , θ' ) ▷ π ｢ y∉π ｣)
+  inTail : ∀ {x} {θ} {π} {y} {θ'} {y∉π} → (x  , θ ) ∈ π → 
+                 ( x  , θ ) ∈ (( y  , θ' ) ▷ π ｢ y∉π ｣)
 \end{code}
 
 Si el par $(x,\theta)$ pertenece a $\pi$ es porque o bien está en la cabeza o bien está en la cola
@@ -287,12 +299,12 @@ que obtener $\bot$ a partir de $v ∉ π$ y de un par $(\theta,p)$ (donde $\thet
 y $p$ algún elemento de $(v,\theta)\in\pi$).
 
 \begin{code}
-∉↝ : {v : Var} {π : Ctx} → v ∉ π → ¬ (∃ (λ θ → (v , θ) ∈ π))
+∉↝ : ∀ {v} {π} → v ∉ π → ¬ (∃ (λ θ → (v , θ) ∈ π))
 ∉↝ {π = ø} ∉ø (_ , ())
-∉↝ {π = (v' , θ') ▷ π' ｢ v'∉π' ｣} (∉¬ø v .π' v∉π' .v'∉π' v≠v') 
-   (θ , inHead .v .θ .π' .v'∉π' v=v' _)    = v≠v' v=v'
-∉↝ {π = (v' , θ') ▷ π' ｢ v'∉π' ｣} (∉¬ø v .π' v∉π' .v'∉π' v≠v') 
-   (θ , inTail .v .θ .π' .v' .θ' v∈π' .v'∉π') = (∉↝ v∉π') (θ , v∈π')
+∉↝ {v} {(v' , θ') ▷ π' ｢ v'∉π' ｣} 
+   (∉¬ø v∉π' v≠v') (θ , inHead v=v' _) = v≠v' v=v'
+∉↝ {v} {(v' , θ') ▷ π' ｢ v'∉π' ｣} 
+   (∉¬ø v∉π' v≠v') (θ , inTail v∈π')   = (∉↝ v∉π') (θ , v∈π')
 \end{code}
    
 En la definición realizamos pattern matching sobre $v ∉ π$ y sobre
@@ -323,26 +335,95 @@ de $(v , θ) ∈ π$), tendremos que obtener uno de $v ∉ π$:
 
 \begin{code}
    
-∉↜ : {v : Var} {π : Ctx} → ¬ (∃ (λ θ → (v , θ) ∈ π)) → v ∉ π
+∉↜ : ∀ {v} {π} → ¬ (∃ (λ θ → (v , θ) ∈ π)) → v ∉ π
 ∉↜ {v} {ø} t↑           = ∉ø
-∉↜ {v} {t ▷ π ｢ p ｣} t↑ = ∉¬ø v π (∉↜ (g t↑)) p (f t↑)
+∉↜ {v} {(v' , θ') ▷ π' ｢ p ｣} t↑ = ∉¬ø (∉↜ (f t↑)) (g t↑)
   where
-    f : {v : Var} {π : Ctx} {v' : Var} {θ' : Type} {p : v' ∉ π} →
-      ¬ (∃ (λ θ → (v , θ) ∈ ((v' , θ') ▷ π ｢ p ｣))) →
-      ¬ (v ≡ v')
-    f {v} {π} {v'} {θ'} {p} t↑ v=v' = 
-      t↑ (θ' , inHead v θ' π p v=v' refl)
-    
-    g : {v : Var} {π : Ctx} {v' : Var} {θ' : Type} {p : v' ∉ π} →
-      ¬ (∃ (λ θ → (v , θ) ∈ ((v' , θ') ▷ π ｢ p ｣))) →
-      ¬ (∃ (λ θ → (v , θ) ∈ π))
-    g {v} {π} {v'} {θ'} {p} t↑ (θ , v∈π) = 
-      t↑ (θ , (inTail v θ π v' θ' v∈π p))
+    f : ¬ (∃ (λ θ → (v , θ) ∈ ((v' , θ') ▷ π' ｢ p ｣))) →
+        ¬ (∃ (λ θ → (v , θ) ∈ π'))
+    f t↑ (θ , v∈π) = t↑ (θ , (inTail v∈π))
+    g : ¬ (∃ (λ θ → (v , θ) ∈ ((v' , θ') ▷ π' ｢ p ｣))) →
+        ¬ (v ≡ v')
+    g t↑ v=v' = t↑ (θ' , inHead v=v' refl)
 \end{code}
 
-blabla
+Aquí podemos hacer pattern matching en el parámetro implícito $\pi$. Si es vacío
+entonces no tenemos otra opción para el valor de retorno que $∉ø$.
+
+Si $\pi = (v' , θ') ▷ π' ｢ p ｣$ entonces el valor de retorno los construimos con 
+$∉¬ø$. Para ello necesitamos dos elementos: uno de tipo $v ∉ π'$ y otro de $¬ (v ≡ v')$.
+Observemos que con lo único que contamos es con una función $t↑$ que dado un elemento de
+$(∃ (λ θ → (v , θ) ∈ π))$ retorna $\bot$. 
+
+Si tenemos que no existe $\theta$ tal que $(v , θ) ∈ (v' , θ') ▷ π' ｢ p ｣$ entonces 
+tampoco existe $\theta$ tal que $(v , θ) ∈ π'$. Podemos construir una función $f$ que exprese
+esto: Dado un elemento de $¬(∃ (λ θ → (v , θ) ∈ π))$ obtiene uno de $¬(∃ (λ θ → (v , θ) ∈ π'))$ 
+Luego aplicando $∉↜$ a $(f \,t↑)$ obtenemos el elemento de $v ∉ π'$ que necesitamos.
+
+Por otro lado, como no existe $\theta$ tal que $(v , θ) ∈ (v' , θ') ▷ π' ｢ p ｣$, entonces
+necesariamente $v$ debe ser distinto a $v'$ (pues de lo contrario podríamos tomar $θ = θ'$).
+Construimos entonces una función $g$ que obtiene un elemento de $¬ (v ≡ v')$ y podemos completar
+la definición.
+\medskip
+
+\subsubsection{Propiedades de los contextos de tipado}
+
+Con las definiciones sobre contextos de tipado podemos definir algunas propiedades interesantes:
+
+\begin{itemize}
+  \item Si dos contextos $π₀$ y $π₁$ son equivalentes (es decir $π₀ ≈ π₁$) y
+        la varible $v$ no pertenece a $π₀$, entonces $v$ no pertenece a $π₁$:
+    
+\begin{code}
+change∉ : ∀ {v} {π₀} {π₁} → π₀ ≈ π₁ → v ∉ π₀ → v ∉ π₁
+change∉ emptyCtxEq notInEmpty = notInEmpty
+change∉ {v} {t ▷ π₀ ｢ p ｣} {.t ▷ π₁ ｢ p' ｣} 
+            (ctxEq e) (∉¬ø p₀ x) = 
+              ∉¬ø (change∉ e p₀) x
+\end{code}
+
+  \item Si dos contextos $π₀$ y $π₁$ son equivalentes, los tipos $θ₀$ y $θ₁$ son iguales
+        y el par $(x , θ₀)$ pertenece a $π₀$, entonces el par $(x , θ₁)$ pertenece a $π₁$:
+  
+\begin{code}
+changeCtxVar : ∀ {x} {π₀} {π₁} {θ₀} {θ₁} → 
+               π₀ ≈ π₁ → θ₀ ≡ θ₁ → (x , θ₀) ∈ π₀ → (x , θ₁) ∈ π₁
+changeCtxVar emptyCtxEq refl x∈π₀ = x∈π₀
+changeCtxVar {x} {(x' , θ') ▷ π₀' ｢ p ｣} {(.x' , .θ') ▷ π₁' ｢ p' ｣}
+             (ctxEq π₀'≈π₁') refl (inHead x≡x' θ₀≡θ') = inHead x≡x' θ₀≡θ'
+changeCtxVar {x} {(x' , θ') ▷ π₀' ｢ p ｣} {(.x' , .θ') ▷ π₁' ｢ p' ｣} 
+             (ctxEq π₀'≈π₁') refl (inTail x∈π₀') = 
+                           inTail (changeCtxVar π₀'≈π₁' refl x∈π₀' )
+\end{code}
+
+  \item Si los pares $(x , θ)$ y $(x , θ')$ perteneces al contexto $π$, entonces
+        $θ ≡ θ'$:
+
+\begin{code}
+uniqueTypeVar : ∀ {π} {x} {θ} {θ'} → (x  , θ) ∈ π → (x , θ') ∈ π → θ ≡ θ'
+uniqueTypeVar (inHead x≡a θ≡θₐ) 
+              (inHead x≡a' θ'≡θₐ) = trans θ≡θₐ (sym θ'≡θₐ)
+uniqueTypeVar {(a  , θₐ) ▷ π' ｢ a∉π' ｣} {x} {θ} {θ'}
+              (inHead x≡a θ≡θₐ) 
+              (inTail x,θ'∈π') = 
+                    ⊥-elim (∉↝ a∉π' (θ' , subst (λ z → (z , θ') ∈ π') x≡a x,θ'∈π'))
+uniqueTypeVar {(a  , θₐ) ▷ π' ｢ a∉π' ｣} {x} {θ} {θ'}
+              (inTail x,θ∈π')
+              (inHead x≡a θ'≡θₐ) = 
+                    ⊥-elim (∉↝ a∉π' (θ , subst (λ z → (z , θ) ∈ π') x≡a x,θ∈π'))
+uniqueTypeVar {(a  , θₐ) ▷ π' ｢ a∉π' ｣} {x} {θ} {θ'}
+              (inTail x,θ∈π') 
+              (inTail x,θ'∈π') = uniqueTypeVar x,θ∈π' x,θ'∈π'
+\end{code}
+
+\end{itemize}
+
 
 \subsection{Juicios de tipado}
+
+Definimos ahora los juicios de tipado.
+Dados un contexto $\pi$, un término $t$ y un tipo $\theta$, el siguiente 
+tipo de dato expresa que $t$ tiene tipo $\theta$ bajo $\pi$:
 
 \begin{code}
 data _⊢_∷_ : Ctx → LambdaTerm → Type → Set where
@@ -357,53 +438,37 @@ data _⊢_∷_ : Ctx → LambdaTerm → Type → Set where
           (π ⊢ t₁ ∷ (θ ⟼ θ')) →
           (π ⊢ t₂ ∷ θ) →
           (π ⊢ (t₁ ● t₂) ∷ θ')
+\end{code}
+
+Los tres constructores se corresponden con las reglas de tipado del cálculo lambda:
+
+\begin{itemize}
+  \item Si el término $t$ es una variable $v$, entonces $t$ tendrá tipo $\theta$ si el par
+        $(x,\theta)$ pertenece a $\pi$.
+  \item Si el término $t$ es una abstracción $λ' x ∶ θ ⟶ t'$, entonces $t$ tendrá tipo $θ ⟼ θ'$ bajo $\pi$ 
+        si tenemos un juicio de tipado para $t'$ con tipo $θ'$ y el contexto $\pi$ donde agregamos
+        el par $( x  , θ )$.
+  \item Si el término $t$ es una aplicación $t₁ ● t₂$, entonces $t$ tendrá tipo $θ'$ bajo $\pi$ si 
+        tenemos un juicio de tipado para $t₁$ con tipo $θ ⟼ θ'$ y contexto $\pi$, y un juicio
+        para $t₂$ con tipo $θ$ y contexto $\pi$.
+\end{itemize}
 
 
-change∉ : ∀ {v} {π₀} {π₁} → π₀ ≈ π₁ → v ∉ π₀ → v ∉ π₁
-change∉ emptyCtxEq notInEmpty = notInEmpty
-change∉ {v} {t ▷ π₀ ｢ p ｣} {.t ▷ π₁ ｢ p' ｣} 
-            (ctxEq e) (∉¬ø .v .π₀ p₀ .p x) = 
-              ∉¬ø v π₁ (change∉ e p₀) p' x
-
-
-changeCtxVar : ∀ {x} {θ} {θ'} {π₀} {π₁} → 
-               (x , θ) ∈ π₀ → π₀ ≈ π₁ → θ ≡ θ' → (x , θ') ∈ π₁
-changeCtxVar x∈π₀ emptyCtxEq refl = x∈π₀
-changeCtxVar {x} {θ} {.θ} {t ▷ π₀' ｢ p ｣} {.t ▷ π₁' ｢ p' ｣} 
-             (inHead .x .θ .π₀' .p x₁ x₂) (ctxEq π₀'≈π₁') refl = inHead x θ π₁' p' x₁ x₂
-changeCtxVar {x} {θ} {.θ} {(x' , θ') ▷ π₀' ｢ p ｣} {(.x' , .θ') ▷ π₁' ｢ p' ｣} 
-             (inTail .x .θ .π₀' .x' .θ' x∈π₀' .p) (ctxEq π₀'≈π₁') refl = 
-                           inTail x θ π₁' x' θ' (changeCtxVar x∈π₀' π₀'≈π₁' refl) p'
-
-
-changeCtx : ∀ {π₀} {π₁} {t} {θ} {θ'} → π₀ ⊢ t ∷ θ → π₀ ≈ π₁ → θ ≡ θ' → π₁ ⊢ t ∷ θ'
-changeCtx (x∈π₀ ∣ᵥ) π₀≈π₁ refl = changeCtxVar x∈π₀ π₀≈π₁ refl ∣ᵥ
+\begin{code}
+changeCtx : ∀ {π₀} {π₁} {t} {θ} {θ'} → π₀ ≈ π₁ → θ ≡ θ' → π₀ ⊢ t ∷ θ → π₁ ⊢ t ∷ θ'
+changeCtx π₀≈π₁ refl (x∈π₀ ∣ᵥ) = changeCtxVar π₀≈π₁ refl x∈π₀ ∣ᵥ
 changeCtx {π₀} {π₁} {t = λ' v ∶ θᵥ ⟶ t₀} {θ = .θᵥ ⟼ θ}
-          (_∣ₗ {.t₀} {.v} {.θᵥ} {.θ} {.π₀} {x∉π₀} π₀⊢t∷θ) π₀≈π₁ refl =
-          _∣ₗ {p = change∉ π₀≈π₁ x∉π₀} (changeCtx π₀⊢t∷θ (ctxEq π₀≈π₁) refl) 
-changeCtx (π₀⊢t∷θ ∧ π₀⊢t∷θ₁ ∣ₐ) π₀≈π₁ refl =
-        (changeCtx π₀⊢t∷θ π₀≈π₁ refl) ∧ (changeCtx π₀⊢t∷θ₁ π₀≈π₁ refl) ∣ₐ
-
-
-uniqueTypeVar : ∀ {π} {x} {θ} {θ'} → (x  , θ) ∈ π → (x , θ') ∈ π → θ ≡ θ'
-uniqueTypeVar (inHead x θ π a∉π x≡a θ≡θₐ) 
-              (inHead .x θ' .π .a∉π x≡a' θ'≡θₐ) = trans θ≡θₐ (sym θ'≡θₐ)
-uniqueTypeVar (inHead x θ π a∉π x≡a θ≡θₐ) 
-              (inTail .x θ' .π a θ'' x,θ'∈π .a∉π) = 
-                    ⊥-elim (∉↝ a∉π (θ' , subst (λ z → (z , θ') ∈ π) x≡a x,θ'∈π))
-uniqueTypeVar (inTail x θ' π a θ'' x,θ'∈π a∉π)
-              (inHead .x θ .π .a∉π x≡a θ≡θₐ) = 
-                    ⊥-elim (∉↝ a∉π (θ' , subst (λ z → (z , θ') ∈ π) x≡a x,θ'∈π))
-uniqueTypeVar (inTail x θ π x' θ'' x,θ∈π x'∉π) 
-              (inTail .x θ' .π .x' .θ'' x,θ'∈π .x'∉π) = 
-                                                      uniqueTypeVar x,θ∈π x,θ'∈π
+          π₀≈π₁ refl (_∣ₗ {.t₀} {.v} {.θᵥ} {.θ} {.π₀} {x∉π₀} π₀⊢t∷θ) =
+          _∣ₗ {p = change∉ π₀≈π₁ x∉π₀} (changeCtx (ctxEq π₀≈π₁) refl π₀⊢t∷θ) 
+changeCtx π₀≈π₁ refl (π₀⊢t∷θ ∧ π₀⊢t∷θ₁ ∣ₐ) =
+        (changeCtx π₀≈π₁ refl π₀⊢t∷θ) ∧ (changeCtx π₀≈π₁ refl π₀⊢t∷θ₁ ) ∣ₐ
 
 
 -- Si un termino se puede tipar con θ y θ', estos son iguales
 uniqueType : ∀ {π} {t} {θ} {θ'} → π ⊢ t ∷ θ → π ⊢ t ∷ θ' → θ ≡ θ'
 uniqueType (x,θ∈π ∣ᵥ) (x,θ'∈π ∣ᵥ) = uniqueTypeVar x,θ∈π x,θ'∈π
 uniqueType (_∣ₗ {θ = θ} π⊢t∷θ) (_∣ₗ {θ = .θ} π⊢t∷θ') = 
-                cong (_⟼_ θ) $ uniqueType π⊢t∷θ $ changeCtx π⊢t∷θ' (ctxEq reflCtx) refl
+                cong (_⟼_ θ) $ uniqueType π⊢t∷θ $ changeCtx (ctxEq reflCtx) refl π⊢t∷θ'
 uniqueType {θ = θ} {θ' = θ'} 
            (_∧_∣ₐ {θ' = .θ} π⊢t∷θ₁⟼θ₂ π⊢t∷θ₁)
            (_∧_∣ₐ π⊢t∷θ₁'⟼θ₂' π⊢t∷θ₁') = 
@@ -420,8 +485,8 @@ aux'' : (π : Ctx) → (v : Var) → (w : Var) → (θ : Type) → ¬ (v ≡ w) 
         (w∉π : w ∉ π) →  (p : ¬ (∃ (λ θ → (v , θ) ∈ π))) → 
         ¬ (∃ (λ θ' → (v , θ') ∈ ((w , θ) ▷ π ｢ w∉π ｣)))
 -- v≠w es una función que toma un elemento de (v ≡ w) y retorna ⊥
-aux'' π v w θ v≠w w∉π p (θ' , inHead .v .θ' .π .w∉π v=w q) = v≠w v=w
-aux'' π v w θ v≠w w∉π p (θ' , inTail .v .θ' .π .w .θ v∈π .w∉π) = p (θ' , v∈π)
+aux'' π v w θ v≠w w∉π p (θ' , inHead v=w q) = v≠w v=w
+aux'' π v w θ v≠w w∉π p (θ' , inTail v∈π) = p (θ' , v∈π)
 
 
 -- Dado un contexto π y una variable v decidimos si existe un tipo θ
@@ -429,8 +494,8 @@ aux'' π v w θ v≠w w∉π p (θ' , inTail .v .θ' .π .w .θ v∈π .w∉π) 
 v∈π? : (v : Var) → (π : Ctx) → Dec (∃ (λ θ → (v , θ) ∈ π))
 v∈π? v ø = no (λ {(θ , ())})
 v∈π?  v ( (w , θ) ▷ π ｢ w∉π ｣) with v ≟ w | v∈π? v π
-... | yes p | _ = yes (θ , inHead v θ π w∉π p refl)
-... | no _  | yes (θ' , v,θ'∈π) = yes (θ' , inTail v θ' π w θ (v,θ'∈π) w∉π)
+... | yes p | _ = yes (θ , inHead p refl)
+... | no _  | yes (θ' , v,θ'∈π) = yes (θ' , inTail v,θ'∈π)
 ... | no v≠w  | no pru = no (aux'' π v w θ v≠w w∉π pru)
 
 
@@ -447,7 +512,7 @@ inferL : {v : Var} {θ : Type} {π : Ctx} {t : LambdaTerm}
           ¬ (∃ (λ θ'' → π ⊢ λ' v ∶ θ ⟶ t ∷ θ''))
 inferL {v} {θ} {π} {t} {p} 
             t↑ (.θ ⟼ θ' , _∣ₗ {.t} {.v} {.θ} {.θ'} {.π} {p'} t∷θ' ) = 
-                   t↑ (θ' , changeCtx t∷θ' (ctxEq reflCtx) refl)
+                   t↑ (θ' , changeCtx (ctxEq reflCtx) refl t∷θ') 
 inferL t↑ ( ⊙ , () )
 
 inferL2 : ∀ {v} {θᵥ} {θ} {π} {t} → (v , θ) ∈ π → ¬ (∃ (λ θ' → π ⊢ λ' v ∶ θᵥ ⟶ t ∷ θ'))
@@ -465,7 +530,7 @@ inferApp₁₂ {π} {t₁} {t₂} (⊙ , π⊢t₁∷⊙) π⊢t₂∷θ = no t�
     ... | yes ()
     ... | no ¬⊙≡θ⟼θ' = ¬⊙≡θ⟼θ' $ uniqueType π⊢t₁∷⊙ π⊢t₁∷θ⟼θ'
 inferApp₁₂ {π} {t₁} {t₂} (θ ⟼ θ' , π⊢t₁∷θ⟼θ') (θ'' , π⊢t₂∷θ'') with θ ≟ₜ θ''
-... | yes θ≡θ'' = yes (θ' , (π⊢t₁∷θ⟼θ' ∧ changeCtx π⊢t₂∷θ'' reflCtx (sym θ≡θ'') ∣ₐ))
+... | yes θ≡θ'' = yes (θ' , (π⊢t₁∷θ⟼θ' ∧ changeCtx reflCtx (sym θ≡θ'') π⊢t₂∷θ'' ∣ₐ))
 ... | no ¬θ≡θ'' = no t₂Absurdo
   where 
     t₂Absurdo : ¬ ∃ (λ θ → π ⊢ (t₁ ● t₂) ∷ θ)

@@ -396,7 +396,7 @@ changeCtxVar {x} {(x' , θ') ▷ π₀' ｢ p ｣} {(.x' , .θ') ▷ π₁' ｢ 
                            inTail (changeCtxVar π₀'≈π₁' refl x∈π₀' )
 \end{code}
 
-  \item Si los pares $(x , θ)$ y $(x , θ')$ perteneces al contexto $π$, entonces
+  \item Si los pares $(x , θ)$ y $(x , θ')$ pertenecen al contexto $π$, entonces
         $θ ≡ θ'$:
 
 \begin{code}

@@ -56,6 +56,9 @@
 
  \usepackage{fancyvrb}
 
+ \usepackage{color}
+
+
  \DefineVerbatimEnvironment
    {code}{Verbatim}
    {fontsize=\footnotesize} % Add fancy options here if you like.
@@ -63,6 +66,7 @@
  %% COMMANDS
  
  \newcommand{\agType}[1] {\textbf{#1}}
+ \newcommand{\comment}[1] {\textbf{\textcolor{red}{#1}}}
    
 \title{Agda, un lenguaje con tipos dependientes}
 \author{Alejandro Gadea, Emmanuel Gunther}
@@ -81,6 +85,200 @@
 un resumen de teoría de tipos, como lo que leímos en homotopy type theory.
 
 \section{Agda}
+
+\subsection{Introduciendo Agda}
+
+En lenguajes como Haskell existe una linea bien marcada entre los tipos
+(\verb|Int|, \verb|Bool|, \verb|String|, etc) y los valores (\verb|0|,
+{\verb|True|, {\verb|"Haskell"|, etc). En cambio en lenguajes con
+tipos dependientes, como Agda, esta separación es menos clara. 
+
+Para ejemplificar esto consideremos los clasicos vectores de algún tipo
+con tamaño fijo, podemos pensar en la siguiente implementación en
+Haskell,
+
+\begin{verbatim}
+
+data Zero where
+
+data Suc n where
+
+data Vec a n where
+    Empty :: Vec a Zero
+    Const :: a -> Vec a n -> Vec a (Suc n)
+
+\end{verbatim}
+
+donde definimos los tipos \verb|Zero| y \verb|Suc n| sin constructores
+con la finalidad de usarlos como \textit{valores} y de esta manera restringir
+el tipo \verb|Vec|. A continuación podemos implementar la función que toma
+el primer elemento de un vecto, como
+
+\begin{verbatim}
+
+first :: Vec a (Suc n) -> a
+first (Const e _) = e
+  
+\end{verbatim}
+
+la particularidad de esta implementación es que durante el checkeo de tipos
+estamos eliminando la posibilidad de escribir \verb|first Empty|. Ahora bien, 
+esta implementación parece razonable
+y comoda de entender; el vector vacio tiene tamaño \verb|Zero| y si agrego
+un elemento \verb|e| a un vector con tipo \verb|Vec a n| (de tamaño \verb|n|) esto
+me construye un vector de tamaño \verb|Suc n|. Lamentablemente la utilización
+de los tipos como valores no solo no parece una forma prolija de usar los
+tipos, si no que utilizar una idea similar pero ahora donde los valores a
+\textit{imitar} con tipos son mas complejos podría derivar en implementaciones
+dificiles de entender o directamente malas.
+
+Acá es donde la \textit{separación menos clara} entre tipos y valores de Agda
+(y los lenguajes con tipado dependiente en general) que mencionabamos antes
+nos puede resultar muy util.
+
+A continuación introducimos distintos conceptos (\comment{no se si 
+conceptos es la palabra que estoy buscando}) 
+de Agda con el fin de implementar el tipo de los vectores de un cierto tipo
+y tamaño, como anteriormente realizamos en Haskell.
+
+\subsection{Tipos de datos y pattern matching}
+
+Empezamos entonces introduciendo la forma de declarar tipos de datos
+\textit{como los de Haskell}. Podemos definir el tipo \verb|Nat| de los 
+números naturales de la siguiente manera
+
+\begin{verbatim}
+
+data Nat : Set where
+  zero : Nat
+  suc  : Nat → Nat
+
+\end{verbatim}
+
+Haciendo la comparación con la implementación en Haskell, notar que ahora
+\verb|zero| y \verb|suc| son valores de tipo \verb|Nat| y
+no tipos en si mismos, además escribiendo \verb|Nat : Set| nos referimos a que \verb|Nat|
+tendrá tipo \verb|Set| que bien podriamos
+pensarlo como \textit{el tipo de los tipos}. Podemos definir funciones por
+pattern matching como hacemos en haskell, pero con la importante salvedad de que
+estamos obligados a cubrir todos los casos debido a que Agda no admite programas
+que no terminen, de ser el caso el chequeador de tipos nos dará un error.
+
+Como ejemplo de función, definimos la suma de dos naturales. Aprovechamos para mencionar que
+Agda es muy flexible con los nombres de funcion (constructores, tipos, etc) cualquier
+secuencia sin espacios de símbolos puede ser considerado un nombre valido, además
+para declarar operadores infijos se hace uso del \verb|_| de manera tal que al
+usar el operador se puede utilizar por ejemplo como \verb|n + m| o \verb|_+_ n m|.
+Donde es importante la separación por espacios, escribir \verb|n+m| no es igual a
+\verb|n + m| por lo dicho anteriormente; cualquier secuencia sin espacios de símbolos
+es un nombre de variable valido.
+
+\begin{verbatim}
+
+_+_ : Nat → Nat → Nat
+zero + m = m
+suc n + m = suc (n + m)
+
+\end{verbatim}
+
+Teniendo en cuenta la exigencia de terminación que impone Agda, notar que en
+el segundo caso de pattern matching es valido ya que el segundo argumento se
+vuelve mas chico.
+
+\subsection{Funciones dependientes y argumentos implicitos}
+
+Hasta acá repasamos como escribir tipos de dato y funciones de Haskell, en Agda.
+Introducimos ahora las funciones dependientes, como funciones en las que en su signatura
+el tipo resultante puede depender de los valores de los argumento. En Agda podemos
+escribir \verb|(a : A) → B| como el tipo de una función que toma un \verb|a : A| y
+retorna algo de tipo \verb|B|, en el cual probablemente aparezca \verb|a|. Podemos
+definir la función identidad por ejemplo como,
+
+\begin{verbatim}
+
+id : (A : Set) → A → A
+id _ = λ x → x
+
+\end{verbatim}
+
+Esta función toma un tipo \verb|A| y retorna la función identidad para ese tipo. Algo que podría
+ocurrir es que el tipo resultante dependa de muchos argumentos ocasionando que nuestra función
+se sature de estos, cuando probablemente la gran mayoría no seán los argumentos
+\textit{realmente esperados} de la función, para evitar esto y poder implementar funciones que toman
+exactamente los parametros que \textit{necesitan}, es que en Agda se puede definir un tipo de argumento
+que llamaremos implicito. Por ejemplo,
+para el caso de la función identidad, deberíamos escribir \verb|id A a| en lugar de lo
+posiblemente deseado \verb|id a|. Podemos escribir un argumento como implicitos simplemente encerrandolo entre
+llaves y de esta manera dejar que el checkeador de tipos de Agda intente inferir su valor. 
+Volviendo al ejemplo de la función identidad podemos escribir al argumento del tipo
+de la función identidad como implicito de la siguiente manera
+
+\begin{verbatim}
+
+id : {A : Set} → A → A
+id = λ x → x
+
+\end{verbatim}
+
+La declaración de los argumentos como implicitos nos exime de tener que pasarlos al
+llamar a la función, pero existe la posibilidad de pasarlos si es que hiciera
+falta o usarlos como un argumento normal en la declaración. La manera de usar a estos
+argumentos implicitos es mediante llaves como cualquier otro argumento o además de las
+llaves utilizando el nombre de la variable escrita en el tipo de la función
+
+\begin{verbatim}
+
+id'o'+1 : {b : Bool} → Nat → Nat
+id'o'+1 {true} = λ x → x
+id'o'+1 {b = false} = λ x → suc zero + x
+
+zero' : Nat
+zero' = id {Nat} zero
+
+\end{verbatim}
+
+\comment{El nombre de la función no parece muy bonito y el ejemplo tampoco}
+
+\subsection{Familias de tipos de datos}
+
+Veamos ahora como podemos definir familia de tipos indexadas implementando el
+tipo de los vectores de un cierto tipo y tamaño
+
+\begin{verbatim}
+
+data Vec (A : Set) : Nat → Set where
+  empty : Vec A zero
+  const : {n : Nat} → A → Vec A n → Vec A (suc n)
+
+\end{verbatim}
+
+diremos que \verb|Vec| está paremetrizado por el tipo \verb|A|
+e indexado por el tipo \verb|Nat|. Dado un tipo \verb|A|, \verb|Vec A| tendrá
+tipo \verb|Nat → Set|, es decir será una familia de tipos indexada por \verb|Nat|, por
+lo tanto tomando un \verb|n : Nat|, \verb|Vec A n| es un tipo; el de los vectores de tipo
+\verb|A| y tamaño \verb|n|. Luego, \verb|empty| será un vector de tamaño cero con
+tipo \verb|Vec A zero| y dado un elemento \verb|e : A| y un vector \verb|v : Vec A n|,
+\verb|const e v| nos construye un vector de tamaño \verb|suc n| con tipo \verb|Vec A (suc n)|.
+
+Esta implementación es bastante similar a la hecha anteriormente
+en Haskell, pero con la diferencia importante que \verb|n| es un valor y no un tipo.
+
+Ahora podemos implementar la función que toma el primer elemento
+
+\begin{verbatim}
+
+first : {A : Set} {n : Nat} → Vec A (suc n) → A
+first (const x _) = x
+
+\end{verbatim}
+
+es importante notar que la condición de exhaustividad del checkeador de tipos
+se cumple ya que no existe otra forma de construir algo de tipo \verb|Vec A (suc n)|
+que no sea con el constructor \verb|const|.
+
+\subsection{Dotted Patterns y Pattern Matching con \verb|with}
+
+\subsection{Valores como pruebas}
 
 hablar un poco de las generalidades de agda
 
@@ -165,6 +363,7 @@ cong⟼⁻¹ refl = refl , refl
 _≟ₜ_ : (θ₁ : Type) → (θ₂ : Type) → Dec (θ₁ ≡ θ₂)
 ⊙ ≟ₜ ⊙                  = yes refl
 ⊙ ≟ₜ θ ⟼ θ'            = no (λ ())
+
 θ₁ ⟼ θ₂ ≟ₜ ⊙           = no (λ ())
 θ₁ ⟼ θ₂ ≟ₜ θ₁' ⟼ θ₂' with θ₁ ≟ₜ θ₁' | θ₂ ≟ₜ θ₂'
 θ₁ ⟼ θ₂ ≟ₜ θ₁' ⟼ θ₂' | yes p | yes p' = yes (cong₂ _⟼_ p p')

@@ -75,14 +75,104 @@
 
 \maketitle
 
-
+%% Referencias: Type Theory and Functional Programming Simon Thompson
+%%              Homotopy Type Theory (Cap 1)
 
 \section{Introducción}
+
+%% Referencia: Type Theory and Functional Programming Simon Thompson
+
+En cualquier sistema de computación se pretende obtener programas que satisfagan problemas
+de manera \textbf{correcta}. Si bien esto parece obviamente deseable, es algo difícil de lograr,
+y que en la práctica pocas veces sucede.
+
+Un programa se escribe a partir de una especificación y se asume que la ejecución del mismo la satisfará. 
+Pero esta asunción no es justificada: en la mayoría de los casos, el programa no satisface la especificación.
+
+¿Cómo podemos entonces lograr tener software correcto? El testing podrá evidenciar errores pero nunca probar
+su ausencia. Sólo una prueba formal de correctitud puede garantizar que un programa satisface una especificación.
+Un enfoque para realizar este proceso podría ser desarrollar el programa, y luego dar una prueba de que satisface
+una especificación, para lo cual deberíamos poder unir la implementación del programa con un sistema
+formal de pruebas, o modelar el programa de tal manera de poder verificar formalmente su corrección. 
+
+Pero otro enfoque más adecuado sería el de desarrollar el programa de manera tal que deba satisfacer una especificación
+por la forma en que es construido.
+
+Los sistemas de tipos en los lenguajes de programación permiten agregar restricciones para la construcción de
+programas, de manera de poder expresar en los tipos propiedades que deben satisfacerse. Un lenguaje no tipado
+permitiría construir programas con algunos errores, que si bien uno podría probar luego que éstos no ocurren,
+no se puede asegurar su ausencia de antemano. En un lenguaje tipado, tal programa no podría construirse. 
+
+Como ejemplo consideremos la función que toma el primer elemento de una lista. En un lenguaje sin tipos
+fuertes como python podríamos escribirla de la siguiente forma:
+
+\begin{verbatim}
+  def head (l):
+    return l[0]
+\end{verbatim}
+
+Dado que no tenemos un sistema de tipos fuerte, podríamos tener un programa que tenga la siguiente línea:
+
+\begin{verbatim}
+  head (True)
+\end{verbatim}
+
+Lo que llevaría a tener un error en tiempo de ejecución.
+
+Consideremos ahora un lenguaje con tipos fuertes como Haskell:
+
+\begin{verbatim}
+  head :: [a] -> a
+  head (x:xs) = x
+\end{verbatim}
+
+Con este lenguaje no podríamos escribir \verb|head True| como antes, pero sí podemos
+escribir \verb|head []|, lo que nuevamente nos llevaría a un error en tiempo de ejecución.
+
+Lo que necesitaríamos es restringir la función \verb|head| para que el tipo del parámetro
+no sea cualquier lista, sino una lista que tenga al menos un elemento.
+
+En un lenguaje con \textbf{tipos dependientes}, como Agda, podríamos definir la función
+head que tome como parámetros la lista y además una "prueba" de que la misma tiene longitud
+mayor que cero:
+
+\begin{verbatim}
+  head : {a : Set}  → (xs : List a) → 0 < length xs → a
+  head [] ()
+  head (x ∷ xs) _ = x
+\end{verbatim}
+
+Con esta definición, para poder aplicar la función \verb|head| sobre una lista \verb|xs| tenemos que poder construir
+un elemento de \verb|0 < length xs|, lo que representa la prueba de que la lista no es vacía. Por lo tanto
+nunca podríamos tener en un programa una llamada a \verb|head []|.
+
+Un lenguaje con estas características permite garantizar la correctitud mediante un sistema de tipos
+que permite escribir proposiciones lógicas como tipos mismos del lenguaje.
+
+\medskip
+
+En este trabajo estudiaremos un lenguaje con tipos dependientes: Agda. Para ello, primero haremos
+un breve repaso de las bases de la teoría de tipos de Martin-Löf. Luego revisaremos las características
+y generalidades del lenguaje Agda. Por último realizaremos una implementación en Agda de la inferencia de tipos
+para el cálculo lambda simplemente tipado asegurando su correctitud.
 
 
 \section{Teoría de tipos}
 
-un resumen de teoría de tipos, como lo que leímos en homotopy type theory.
+\subsection{Teoría de tipos vs. Teoría de conjuntos}
+
+La teoría de tipos es una teoría fundacional de la matemática, alternativa a la de conjuntos de Zermelo-Fraenkel.
+Difiere de esta última en algunos aspectos importantes:
+
+\begin{itemize}
+  \item En la teoría de conjuntos podemos identificar dos "capas": El sistema deductivo de la lógica de primer orden
+        y, dentro de este sistema, los axiomas de una teoría particular como la de Zermelo-Fraenkel.
+        
+        En la teoría de tipos no tenemos esta distinción, la teoría \textbf{es} su propio sistema deductivo. En 
+        lugar de tener dos nociones como "conjuntos" y "proposiciones", tiene solo una: los \textbf{tipos}.
+        
+  \item
+\end{itemize}
 
 \section{Agda}
 
@@ -276,7 +366,7 @@ es importante notar que la condición de exhaustividad del checkeador de tipos
 se cumple ya que no existe otra forma de construir algo de tipo \verb|Vec A (suc n)|
 que no sea con el constructor \verb|const|.
 
-\subsection{Dotted Patterns y Pattern Matching con \verb|with}
+\subsection{Dotted Patterns y Pattern Matching con with}
 
 \subsection{Valores como pruebas}
 

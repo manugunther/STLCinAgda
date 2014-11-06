@@ -9,6 +9,7 @@
  \usepackage{bbm}
  \usepackage[greek,english]{babel}
  \usepackage{amsmath}
+ \usepackage{ dsfont }
 
  % This handles the translation of unicode to latex:
 
@@ -67,6 +68,13 @@
  
  \newcommand{\agType}[1] {\textbf{#1}}
  \newcommand{\comment}[1] {\textbf{\textcolor{red}{#1}}}
+ \newcommand{\tjud}[2]
+  {\ensuremath{#1\,:\,#2}}
+ \newcommand{\depFun}[3] {
+  {\ensuremath{\Pi_{\tjud{#1}{#2}}\,#3\,#1}}
+ }
+
+ 
    
 \title{Agda, un lenguaje con tipos dependientes}
 \author{Alejandro Gadea, Emmanuel Gunther}
@@ -154,10 +162,13 @@ que permite escribir proposiciones lógicas como tipos mismos del lenguaje.
 En este trabajo estudiaremos un lenguaje con tipos dependientes: Agda. Para ello, primero haremos
 un breve repaso de las bases de la teoría de tipos de Martin-Löf. Luego revisaremos las características
 y generalidades del lenguaje Agda. Por último realizaremos una implementación en Agda de la inferencia de tipos
-para el cálculo lambda simplemente tipado asegurando su correctitud.
+para el cálculo lambda simplemente tipado asegurando su corrección.
 
 
 \section{Teoría de tipos}
+
+En esta sección daremos un vistazo a las bases de la teoría de tipos de Martin Löf, haciendo
+un resumen del primer capítulo del libro (cita a homotopy types).
 
 \subsection{Teoría de tipos vs. Teoría de conjuntos}
 
@@ -171,8 +182,122 @@ Difiere de esta última en algunos aspectos importantes:
         En la teoría de tipos no tenemos esta distinción, la teoría \textbf{es} su propio sistema deductivo. En 
         lugar de tener dos nociones como "conjuntos" y "proposiciones", tiene solo una: los \textbf{tipos}.
         
-  \item
+  \item En el sistema deductivo de la teoría de conjuntos tenemos un solo tipo de juicios: Una proposición tiene una prueba. Las
+        reglas para construir estos juicios son del estilo "A partir de $A$ y $B$ se infiere $A \wedge B$". Un juicio (como
+        "$A$ tiene una prueba" existe a un nivel distinto al de una proposición en sí misma ($A$).
+        
+        En teoría de tipos el análogo a "$A$ tiene una prueba" es "$a\,:\,A$" ($a$ tiene tipo $A$). Si consideramos que el tipo
+        $A$ representa una proposición, luego $a$ es la prueba que hace a la proposición $A$ cierta. De esta forma
+        la teoría de tipos es un sistema \textbf{constructivista}, ya que para probar la validez de una propiedad se debe
+        encontrar el testigo que la hace cierta.
+        
+  \item Si bien un juicio de tipado "$a\,:\,A$" puede interpretarse como que $a$ es la prueba de cierta proposición $A$, también
+        puede ser considerado como el análogo a "$a \in A$" de la teoría de conjuntos, es decir, considerar al tipo $A$ como un conjunto
+        de elementos. Sin embargo hay una diferencia escencial en el hecho de que "$a\,:\,A$" es un juicio, mientras que "$a \in A$"
+        es una proposición. En particular, en la teoría de tipos no podemos construir proposiciones del tipo "si $a\,:\,A$ luego ..."
+        La existencia de $a$ sólo puede considerarse dentro de un tipo, y no por sí solo, ya que cada elemento por su propia naturaleza
+        debe tener un tipo. En cambio en la teoría de conjuntos esto no es así.
+        
+  \item Una última diferencia a considerar es el concepto de \text{igualdad}. La noción de igualdad usual en matemática es considerarla
+        una proposición. Dado que en la teoría de tipos las proposiciones son tipos, luego la igualdad también será un tipo. Dados 
+        dos elementos $a\,:\,A$, $b\,:\,A$, tenemos el tipo $a\,=_{A}\,b$. Si existe un elemento del tipo $a\,=_{A}\,b$, luego tenemos
+        que $a$ y $b$ son proposicionalmente iguales.
+        
+        Sin embargo en la teoría de tipos también tenemos otro tipo de igualdad, la igualdad por definición (o judgamental equality), la cual
+        existe al mismo nivel que un juicio de tipado. Si definimos una función $f\,:\,\mathds{N} \rightarrow \mathds{N}$ mediante
+        la ecuación $f(x)\,=\,x^2$, luego la expresión $f\,3$ es igual a $3^2$ \textbf{por definición}. Esta igualdad es algorítmicamente
+        decidible y el chequeo es parte de la meta-teoría.
+        
 \end{itemize}
+
+\subsection{Tipos funcionales}
+
+Dados dos tipos $A$ y $B$ se puede construir un tipo $A \rightarrow B$ que representa funciones con dominio
+en $A$ y codominio en $B$. Las funciones son un concepto primitivo en la teoría de tipos.
+
+Dada un elemento $\tjud{f}{A \rightarrow B}$ y un $\tjud{a}{A}$, luego se puede \textit{aplicar} la función
+$f$ a $a$, lo cual notamos con $f\,a$ y cuyo tipo es $\tjud{f\,a}{B}$.
+
+Para construir elementos de un tipo funcional $A \rightarrow B$ se puede realizar una definición o utilizar la abstracción lambda. La
+definición
+\begin{align*}
+  f\,x\,=\,\Phi
+\end{align*}
+
+donde $x$ es una variable y $\Phi$ una expresión que puede contener a $x$, es válida si se chequea que $\tjud{\Phi}{B}$ 
+asumiendo $\tjud{x}{A}$.
+
+La misma definición mediante la abstacción lambda sería:
+\begin{align*}
+  \lambda\,(\tjud{x}{A}).\Phi
+\end{align*}
+
+\noindent que cumple el juicio $\tjud{\lambda\,(\tjud{x}{A}).\Phi}{A \rightarrow B}$ bajo las mismas condiciones detalladas previamente
+sobre $x$ y $\Phi$. A partir de que la expresión tiene tipo $A \rightarrow B$, el tipo de la variable $x$ puede inferirse, por lo
+cual podemos omitir ponerlo explícitamente.
+
+Con la definición de funciones se introduce una \textbf{regla de computación}, la cual es una igualdad por definición (judgamental equality):
+\begin{align*}
+  (\lambda\,x.\Phi)\,a\;\equiv\;\Phi'
+\end{align*}
+
+\noindent donde $\Phi'$ es igual a $\Phi$ en la cual todas las ocurrencias de $x$ son reemplazadas por $a$.
+
+Otra regla que se introduce es la también conocida como \textbf{regla Eta}. Dado que tenemos definida una función 
+$\tjud{f}{A \rightarrow B}$, se da la siguiente igualdad por definición:
+\begin{align*}
+  f \equiv \lambda\,x.f\,x
+\end{align*}
+
+\subsection{Universos y familias}
+
+Como dijimos previamente, en teoría de tipos un elemento no existe en sí mismo si no que debe tener un tipo. Por lo tanto
+¿qué son los tipos mismos? Un tipo $A$ también deberá tener un tipo. Usualmente se utiliza el término \textbf{universo}
+para referir al tipo cuyos elementos son tipos. Esto podría dar lugar a una paradoja, ya que si tenemos un tipo que contiene
+a todos los tipos, luego se contendría a sí mismo (la paradoja de Russell).
+
+Para evitar la paradoja se introduce una jerarquía en los universos
+\begin{align*}
+  \tjud{U_0}{\tjud{U_1}{\tjud{U_2}{...}}}
+\end{align*}
+
+\noindent donde cada $U_i$ es un elemento de $U_{i+1}$, y más aún si $\tjud{A}{U_i}$, luego también $\tjud{A}{U_{i+1}}$.
+Si no es necesario conocer a qué nivel de universo explícitamente pertenece un tipo, se lo suele omitir anotando simplemente   
+$\tjud{A}{U}$.
+
+Notemos entonces que podríamos tener una función que a partir de un valor de algún tipo retorne no un valor sino un tipo.
+A este tipo de funciones se las suele llamar también \textbf{familia de tipos}:
+\begin{align*}
+  \tjud{B}{A \rightarrow U}
+\end{align*}
+
+\noindent Si se aplica $B$ a algún valor de tipo $A$, se obtiene un tipo.
+
+\subsection{Funciones dependientes}
+
+En la teoría de tipos podemos definir funciones más generales que las usuales, en donde el codominio puede depender
+de valores del dominio. Al tipo de las funciones dependientes se las llama $\Pi-type$ en CITA.
+
+Dado un tipo $\tjud{A}{U}$ y una familia $\tjud{B}{A \rightarrow U}$ podemos definir el tipo de las funciones dependientes
+\begin{align*}
+ \tjud{\depFun{x}{A}{B}}{U}
+\end{align*}
+
+\noindent un elemento de este tipo será una función que tome un valor $x$ de tipo $A$ y retorne uno de tipo $B\,x$. 
+Notemos que si $B$ es constante tenemos el tipo de las funciones como lo definimos previamente.
+
+Las reglas para este tipo son las mismas que definimos para las funciones comunes.
+
+Si tenemos una función $\tjud{f}{\depFun{x}{A}{B}}$, \textit{para cada} elemento $\tjud{x}{A}$ podemos obtener
+un elemento de $B\,x$, es decir, aplicando $f$ a cualquier $\tjud{x}{A}$ tenemos un habitante del tipo $B\,x$.
+Notemos que si pensamos a los tipos como proposiciones, y consideramos que una proposición es válida cuando
+el tipo que la representa tiene un elemento, el tipo de la función $f$ representa que \textit{para todo $\tjud{x}{A}$
+vale $B\,x$}.
+
+\subsection{Producto}
+
+Dados dos tipos $\tjud{A}{U}$ y $\tjud{B}{U}$, introducimos el tipo $\tjud{A \times B}{U}$, al cual se lo suele llamar
+\textbf{producto cartesiano}.
 
 \section{Agda}
 

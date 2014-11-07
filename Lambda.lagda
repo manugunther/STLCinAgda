@@ -6,7 +6,7 @@
  % use more unicode characters:
 
  \usepackage{amssymb}
- \usepackage{bbm}
+
  \usepackage[greek,english]{babel}
  \usepackage{amsmath}
  \usepackage{ dsfont }
@@ -141,7 +141,7 @@ Lo que necesitaríamos es restringir la función \verb|head| para que el tipo de
 no sea cualquier lista, sino una lista que tenga al menos un elemento.
 
 En un lenguaje con \textbf{tipos dependientes}, como Agda, podríamos definir la función
-head que tome como parámetros la lista y además una "prueba" de que la misma tiene longitud
+head que tome como parámetros la lista y además una ``prueba" de que la misma tiene longitud
 mayor que cero:
 
 \begin{verbatim}
@@ -327,17 +327,20 @@ data Vec a n where
 donde definimos los tipos \verb|Zero| y \verb|Suc n| sin constructores
 con la finalidad de usarlos como \textit{valores} y de esta manera restringir
 el tipo \verb|Vec|. A continuación podemos implementar la función que toma
-el primer elemento de un vecto, como
+el primer elemento de un vector, como
 
 \begin{verbatim}
 
-first :: Vec a (Suc n) -> a
-first (Const e _) = e
+head :: Vec a (Suc n) -> a
+head (Const e _) = e
   
 \end{verbatim}
 
 la particularidad de esta implementación es que durante el checkeo de tipos
-estamos eliminando la posibilidad de escribir \verb|first Empty|. Ahora bien, 
+estamos eliminando la posibilidad de escribir \verb|head Empty|, donde 
+si recordamos la implementación de \verb|head| realizada en la introducción,
+esta nueva implementación sobre listas de cierto tamaño nos ahorra la prueba de 
+que el tamaño de la lista es mayor que 0. Ahora bien, 
 esta implementación parece razonable
 y comoda de entender; el vector vacio tiene tamaño \verb|Zero| y si agrego
 un elemento \verb|e| a un vector con tipo \verb|Vec a n| (de tamaño \verb|n|) esto
@@ -397,8 +400,8 @@ suc n + m = suc (n + m)
 \end{verbatim}
 
 Teniendo en cuenta la exigencia de terminación que impone Agda, notar que en
-el segundo caso de pattern matching es valido ya que el segundo argumento se
-vuelve mas chico.
+el segundo caso de pattern matching es valido ya que el primer argumento de
+la suma se vuelve mas chico.
 
 \subsection{Funciones dependientes y argumentos implicitos}
 
@@ -416,14 +419,14 @@ id _ = λ x → x
 
 \end{verbatim}
 
-Esta función toma un tipo \verb|A| y retorna la función identidad para ese tipo. Algo que podría
+Esta función toma un tipo \verb|A| y retorna la función identidad para ese tipo. Ahora bien, algo que podría
 ocurrir es que el tipo resultante dependa de muchos argumentos ocasionando que nuestra función
 se sature de estos, cuando probablemente la gran mayoría no seán los argumentos
 \textit{realmente esperados} de la función, para evitar esto y poder implementar funciones que toman
-exactamente los parametros que \textit{necesitan}, es que en Agda se puede definir un tipo de argumento
+exactamente los parametros que \textit{esperamos}, es que en Agda se puede definir un tipo de argumento
 que llamaremos implicito. Por ejemplo,
 para el caso de la función identidad, deberíamos escribir \verb|id A a| en lugar de lo
-posiblemente deseado \verb|id a|. Podemos escribir un argumento como implicitos simplemente encerrandolo entre
+posiblemente esperado \verb|id a|. Podemos escribir un argumento como implicitos simplemente encerrandolo entre
 llaves y de esta manera dejar que el checkeador de tipos de Agda intente inferir su valor. 
 Volviendo al ejemplo de la función identidad podemos escribir al argumento del tipo
 de la función identidad como implicito de la siguiente manera
@@ -443,16 +446,17 @@ llaves utilizando el nombre de la variable escrita en el tipo de la función
 
 \begin{verbatim}
 
-id'o'+1 : {b : Bool} → Nat → Nat
-id'o'+1 {true} = λ x → x
-id'o'+1 {b = false} = λ x → suc zero + x
+map : {A : Set} {B : Set} → (A → B) → List A → List B
+map {A} {B} _ [] = []
+map {B = B} f (x ∷ xs) = f x ∷ map f xs
 
-zero' : Nat
-zero' = id {Nat} zero
+mapFromNat : {B : Set} → (Nat → B) → List Nat → List B
+mapFromNat = map {Nat}
+
+mapToNat : {A : Set} → (A → Nat) → List A → List Nat
+mapToNat = map {B = Nat}
 
 \end{verbatim}
-
-\comment{El nombre de la función no parece muy bonito y el ejemplo tampoco}
 
 \subsection{Familias de tipos de datos}
 
@@ -476,14 +480,14 @@ tipo \verb|Vec A zero| y dado un elemento \verb|e : A| y un vector \verb|v : Vec
 \verb|const e v| nos construye un vector de tamaño \verb|suc n| con tipo \verb|Vec A (suc n)|.
 
 Esta implementación es bastante similar a la hecha anteriormente
-en Haskell, pero con la diferencia importante que \verb|n| es un valor y no un tipo.
+en Haskell, pero con la diferencia importante que \verb|n| es un valor y no un tipo. 
 
 Ahora podemos implementar la función que toma el primer elemento
 
 \begin{verbatim}
 
-first : {A : Set} {n : Nat} → Vec A (suc n) → A
-first (const x _) = x
+head : {A : Set} {n : Nat} → Vec A (suc n) → A
+head (const x _) = x
 
 \end{verbatim}
 
@@ -492,6 +496,80 @@ se cumple ya que no existe otra forma de construir algo de tipo \verb|Vec A (suc
 que no sea con el constructor \verb|const|.
 
 \subsection{Dotted Patterns y Pattern Matching con with}
+
+Consideremos la función \verb|zip| sobre vectores que dados dos vectores
+de igual tamaño nos construye un vector de pares. Donde es importante
+notar la restricción interesante que impone el hecho de que los vectores
+sean de igual tamaño, el \verb|zip| implementado sobre listas permite
+realizarlo sobre listas de distinto tamaño generando el probable recorte
+de elementos al no tener estos con quien emparejarse.
+
+\begin{verbatim}
+
+zip : {A B : Set} {n : Nat} → Vec A n → Vec B n → Vec (A × B) n
+zip empty empty = empty
+zip (const a as) (const b bs) = const (a , b) (zip as bs)
+
+\end{verbatim}
+
+Podemos pensar ahora que ocurre si hacemos pattern matching en el 
+argumento \verb|n : Nat| en el segundo caso
+
+\begin{verbatim}
+
+zip {n = (suc n)} (const {ma} a as) (const {mb} b bs) = ...
+
+\end{verbatim}
+
+notar que el \verb|n| del lado izquiero se refiere al nombre de variable
+del tipo y el \verb|n| del lado derecho es una variable nueva donde hacer
+pattern matching, cada vez que hablemos de \verb|n| nos referiremos a este
+mismo. Ahora bien, este \verb|n| debería ser (y lo es) el único tamaño posible
+de las listas \verb|as| y \verb|bs|, es decir \verb|ma = n = mb|.
+¿cómo podemos remarcar esto en el caso de pattern matching?; la solución esta en
+usar dotted patterns, para esto prefijamos el caso de pattern matching con un punto
+(\verb|.|) de manera de marcar que el valor fue deducido por el chequeo de tipos
+y no por pattern matching. Luego podemos escribir
+
+\begin{verbatim}
+
+zip {n = (suc n)} (const {.n} a as) (const {.n} b bs) = ...
+
+\end{verbatim}
+
+\comment{Esto es choreadisimo, pero esta bueno}
+
+La regla para saber si un argumento debe tener prefijado el punto es: \textit{Si existe
+un único valor para un argumento, este debe estar prefijado por el punto}.
+
+Introduzcamos ahora la sentencia \verb|with| que nos permite agregar mas
+argumentos a la función y realizar pattern matching de la forma usual, asi por ejemplo
+esto nos permite combinar dos o mas argumentos y hacer pattern matching sobre su
+resultado. La siguiente siguiente función de ejemplo retona la cantidad de elementos
+que cumplen una cierta propiedad sobre un vector.
+
+\begin{verbatim}
+
+#-filter : {n : ℕ} {A : Set} → (A → Bool) → Vec A n → ℕ
+#-filter p empty = zero
+#-filter p (const x xs) with p x
+... | true  = suc (#-filter p xs)
+... | false = #-filter p xs
+
+\end{verbatim}
+
+Luego habiendo definido la función \verb|#-filter| podemos implementar la función
+filter sobre los vectores.
+
+\begin{verbatim}
+
+filter : {n : ℕ} {A : Set} → (p : A → Bool) → (xs : Vec A n) → Vec A (#-filter p xs)
+filter p empty = empty
+filter p (const x xs) with p x
+... | true  = const x (filter p xs)
+... | false = filter p xs
+
+\end{verbatim}
 
 \subsection{Valores como pruebas}
 

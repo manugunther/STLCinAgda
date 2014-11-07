@@ -301,6 +301,18 @@ Dados dos tipos $\tjud{A}{U}$ y $\tjud{B}{U}$, introducimos el tipo $\tjud{A \ti
 
 \section{Agda}
 
+En esta sección presentaremos varios conceptos de Agda con el fin cubrir
+todo lo que se usará en la sección final en la cual se presenta la implementación
+del inferidor de tipos para el calculo lambda simplemente tipado. 
+
+Sin embargo la sección en si se puede considerarse auto contenida, salvo algunas
+menciones a la sección anterior, y por lo tanto una introducción para quien
+se este iniciando en la programación en Agda. Por otro lado, si el lector
+conoce conceptos como; tipos de datos, pattern matching, funciones dependientes,
+familias de tipos de datos, sentencia \verb|with|, argumentos implicitos,
+dotted patterns, etc. Una opción puede ser dirigirse directo a la sección
+siguiente.
+
 \subsection{Introduciendo Agda}
 
 En lenguajes como Haskell existe una linea bien marcada entre los tipos
@@ -563,7 +575,8 @@ filter sobre los vectores.
 
 \begin{verbatim}
 
-filter : {n : ℕ} {A : Set} → (p : A → Bool) → (xs : Vec A n) → Vec A (#-filter p xs)
+filter : {n : ℕ} {A : Set} → 
+         (p : A → Bool) → (xs : Vec A n) → Vec A (#-filter p xs)
 filter p empty = empty
 filter p (const x xs) with p x
 ... | true  = const x (filter p xs)
@@ -573,7 +586,9 @@ filter p (const x xs) with p x
 
 \subsection{Valores como pruebas}
 
-hablar un poco de las generalidades de agda
+- Igualdad proposicional
+- Pattern absurdo
+- Pruebas
 
 \section{Un inferidor de tipos para el cálculo lambda certificado}
 

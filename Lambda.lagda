@@ -20,6 +20,8 @@
  
  \usepackage{listings}
  
+
+\usepackage{bigfoot}
  
  % Some characters that are not automatically defined
  % (you figure out by the latex compilation errors you get),
@@ -37,6 +39,8 @@
  \DeclareUnicodeCharacter{952}{\ensuremath{\theta}}
  \DeclareUnicodeCharacter{960}{\ensuremath{\pi}}
  \DeclareUnicodeCharacter{955}{\ensuremath{\lambda}}
+ \DeclareUnicodeCharacter{931}{\ensuremath{\Sigma}}
+ \DeclareUnicodeCharacter{916}{\ensuremath{\Delta}}
  \DeclareUnicodeCharacter{10230}{\ensuremath{\longrightarrow}}
  \DeclareUnicodeCharacter{9679}{\ensuremath{\bullet}}
  \DeclareUnicodeCharacter{8348}{\ensuremath{_t}}
@@ -150,8 +154,11 @@ mayor que cero:
   head (x ∷ xs) _ = x
 \end{verbatim}
 
-Con esta definición, para poder aplicar la función \verb|head| sobre una lista \verb|xs| tenemos que poder construir
-un elemento de \verb|0 < length xs|, lo que representa la prueba de que la lista no es vacía. Por lo tanto
+Ignorando de momento el primer caso de pattern matching \verb|head [] ()|, pensandolo
+simplemente como \textit{este caso no puede ocurrir nunca}.
+Con esta definición, para poder aplicar la función \verb|head| sobre una lista \verb|xs|
+tenemos que poder construir un elemento de \verb|0 < length xs|, lo que representa la
+prueba de que la lista no es vacía. Por lo tanto
 nunca podríamos tener en un programa una llamada a \verb|head []|.
 
 Un lenguaje con estas características permite garantizar la correctitud mediante un sistema de tipos
@@ -301,9 +308,11 @@ Dados dos tipos $\tjud{A}{U}$ y $\tjud{B}{U}$, introducimos el tipo $\tjud{A \ti
 
 \section{Agda}
 
-En esta sección presentaremos varios conceptos de Agda con el fin cubrir
-todo lo que se usará en la sección final en la cual se presenta la implementación
-del inferidor de tipos para el calculo lambda simplemente tipado. 
+En esta sección presentaremos varios conceptos de Agda con el fin introducir 
+todo lo necesario para la sección final en la cual se presenta la implementación
+del inferidor de tipos para el calculo lambda simplemente tipado. Es importante
+mencionar que todos los ejemplos, incluido el inferidor, fueron compilados con
+Agda 2.4.2.
 
 Sin embargo la sección en si se puede considerarse auto contenida, salvo algunas
 menciones a la sección anterior, y por lo tanto una introducción para quien
@@ -312,6 +321,8 @@ conoce conceptos como; tipos de datos, pattern matching, funciones dependientes,
 familias de tipos de datos, sentencia \verb|with|, argumentos implicitos,
 dotted patterns, etc. Una opción puede ser dirigirse directo a la sección
 siguiente.
+
+
 
 \subsection{Introduciendo Agda}
 
@@ -326,9 +337,9 @@ Haskell,
 
 \begin{verbatim}
 
-data Zero where
+data Zero
 
-data Suc n where
+data Suc n
 
 data Vec a n where
     Empty :: Vec a Zero
@@ -507,14 +518,13 @@ es importante notar que la condición de exhaustividad del checkeador de tipos
 se cumple ya que no existe otra forma de construir algo de tipo \verb|Vec A (suc n)|
 que no sea con el constructor \verb|const|.
 
-\subsection{Dotted Patterns y Pattern Matching con with}
-
+\subsubsection{Dotted patterns}
 Consideremos la función \verb|zip| sobre vectores que dados dos vectores
 de igual tamaño nos construye un vector de pares. Donde es importante
 notar la restricción interesante que impone el hecho de que los vectores
 sean de igual tamaño, el \verb|zip| implementado sobre listas permite
 realizarlo sobre listas de distinto tamaño generando el probable recorte
-de elementos al no tener estos con quien emparejarse.
+de elementos al no tener estos con quien emparejarse. 
 
 \begin{verbatim}
 
@@ -523,6 +533,11 @@ zip empty empty = empty
 zip (const a as) (const b bs) = const (a , b) (zip as bs)
 
 \end{verbatim}
+
+Notar que el tipo de los elementos del vector resultante de haber
+aplicado \verb|zip| a dos vectores es \verb|A × B|, podemos
+ignorarlo por ahora y simplemente aclarar que se refiere al producto cartesiano
+cuyo constructor es \verb|(_,_)|.
 
 Podemos pensar ahora que ocurre si hacemos pattern matching en el 
 argumento \verb|n : Nat| en el segundo caso
@@ -533,10 +548,12 @@ zip {n = (suc n)} (const {ma} a as) (const {mb} b bs) = ...
 
 \end{verbatim}
 
-notar que el \verb|n| del lado izquiero se refiere al nombre de variable
-del tipo y el \verb|n| del lado derecho es una variable nueva donde hacer
+es importante mencionar que, teniendo en cuenta la igualdad que se encuentra 
+entre llave en uno de los casos de pattern matching, el \verb|n| del 
+lado izquiero se refiere al nombre de variable
+del tipo y el \verb|n| del lado derecho es una variable fresca donde hacer
 pattern matching, cada vez que hablemos de \verb|n| nos referiremos a este
-mismo. Ahora bien, este \verb|n| debería ser (y lo es) el único tamaño posible
+ultimo. Ahora bien, este \verb|n| debería ser (y lo es) el único tamaño posible
 de las listas \verb|as| y \verb|bs|, es decir \verb|ma = n = mb|.
 ¿cómo podemos remarcar esto en el caso de pattern matching?; la solución esta en
 usar dotted patterns, para esto prefijamos el caso de pattern matching con un punto
@@ -549,13 +566,15 @@ zip {n = (suc n)} (const {.n} a as) (const {.n} b bs) = ...
 
 \end{verbatim}
 
-\comment{Esto es choreadisimo, pero esta bueno}
+Como se menciona en \textit{citar Dependently Typed Programming in Agda}:
 
 La regla para saber si un argumento debe tener prefijado el punto es: \textit{Si existe
 un único valor para un argumento, este debe estar prefijado por el punto}.
 
+\subsubsection{Pattern con with }
 Introduzcamos ahora la sentencia \verb|with| que nos permite agregar mas
-argumentos a la función y realizar pattern matching de la forma usual, asi por ejemplo
+argumentos a la función y realizar pattern matching de la forma usual, teniendo
+en cuenta la condición de exhaustividad. Asi por ejemplo
 esto nos permite combinar dos o mas argumentos y hacer pattern matching sobre su
 resultado. La siguiente siguiente función de ejemplo retona la cantidad de elementos
 que cumplen una cierta propiedad sobre un vector.
@@ -584,11 +603,107 @@ filter p (const x xs) with p x
 
 \end{verbatim}
 
-\subsection{Valores como pruebas}
+\subsubsection{Producto dependiente}
 
+Anteriormente pasamos por alto el tipo \verb|_×_| mencionando simplemente
+que se correspondía con la noción de producto cartesiano. Siguiendo con
+esta idea la implementación del tipo de dato en Agda será
+
+\begin{verbatim}
+
+data _×_ (A : Set) (B : Set) : Set where
+  _,_ : A → B → A × B
+
+\end{verbatim}
+
+Ahora bien, así como pasamos de tener funciones como en Haskell
+a tener funciones dependientes, es interesante también generalizar el tipo de
+dato producto (×) para obtener lo que llamaremos producto dependiente.
+Considerando lo mencionado en la sección anterior, si tenemos un tipo
+\verb|A : Set| y \verb|B : A → Set| podemos construirnos un
+par pero donde el valor de la primera componente afecta a la segunda componente.
+
+Presentar la implementación esta fuera de la idea de esta sección;\footnote{Un 
+lector mas interesado puede encontrar la definición en el módulo Data.Product} y
+por esta razón simplemente presentamos la sintaxis necesaria y algunas
+funciones utiles. Teniendo en cuenta los tipos \verb|A| y \verb|B| 
+anteriores podemos escribir el tipo del producto dependiente como 
+\verb|Σ[ x ∈ A ] B x|, donde el constructor será \verb|_,_| y además
+dispondremos de dos funciones \verb|proj₁| y \verb|proj₂| que nos
+retornaran la primera y segunda componente de un par.
+
+Podemos entonces usando el producto dependiente implementar una
+versión del \verb|filter| mejorada, la cual no requiere calcular
+de antemano el tamaño del nuevo vector con los elementos filtrados.
+
+Tomando entonces \verb|Nat : Set| y \verb|Vec A : Nat → Set| podemos
+escribir el producto dependiente \verb|Σ[ m ∈ Nat ] Vec A m| \footnote{Otra posibilidad
+es escribir \verb|∃ (λ m → Vec Nat m)|, que se puede leer 
+como \textit{existe un m tal que...}}.
+
+\begin{verbatim}
+
+filter : {n : Nat} {A : Set} → 
+         (A → Bool) → Vec A n → Σ[ m ∈ Nat ] Vec A m
+filter p empty = zero , empty
+filter {n = suc n'} p (const y vec) with p y
+... | false = filter p vec
+... | true  = let (m , vec') = filter p vec
+              in (suc m , const y vec')
+
+\end{verbatim}
+
+\subsubsection{Pattern absurdo}
+
+En la introducción se muestra la implementación de la función \verb|head| que
+retorna el primer elemento de una lista con tipo \verb|List A| y se sugiere ignorar
+el primer caso de pattern (\verb|head [] ()|). A este tipo de casos de pattern
+los llamaremos patterns absurdos y se escriben como \verb|()|, la idea es que; así
+como con dotted patterns podíamos simbolizar la existencia de un único valor, el 
+pattern absurdo nos permite decir que ese caso nunca puede ocurrir ya que es 
+imposible construir un valor de este tipo.
+
+Así por ejemplo, introduciendo rápidamente una posible implementación para el
+tipo \verb|≤|
+
+\begin{verbatim}
+
+data _≤_ : Nat → Nat → Set where
+  z≤n : {n : Nat}                  → zero ≤ n
+  s≤s : {m n : Nat} (m≤n : m le n) → suc m ≤ suc n
+
+\end{verbatim}
+
+y definiendo al \verb|<| como
+
+\begin{verbatim}
+
+_<_ : Nat → Nat → Set
+m < n = suc m ≤ n
+
+\end{verbatim}
+
+podemos analizar el ejemplo de la función \verb|head|, el pattern
+absurdo es ocacionado por \verb|head []| cuyo tipo, reemplazando valores,
+será \verb|head [] : zero < zero → a|. Donde es claro notar que es imposible
+construir un valor para el tipo \verb|zero < zero| o \verb|suc zero ≤ zero|
+\footnote{Usamos \verb|zero| y \verb|suc zero| para evidenciar de forma mas clara
+la imposibilidad de construir un valor de tal tipo. Sin embargo, escribir \verb|0| y \verb|1|
+sería totalmente valido.} .
+
+Finalmente, cuando sucede que existe un pattern absurdo no tenemos que
+preocuparnos por dar una definición de función para ese caso.
+
+\subsection{Tipo Dec}
+
+- Tipo vacio
 - Igualdad proposicional
-- Pattern absurdo
+- Dec
+
+\subsection{Valores como pruebas}
 - Pruebas
+
+
 
 \section{Un inferidor de tipos para el cálculo lambda certificado}
 

@@ -9,7 +9,7 @@
 
  \usepackage[greek,english]{babel}
  \usepackage{amsmath}
- \usepackage{ dsfont }
+ \usepackage{dsfont}
 
  % This handles the translation of unicode to latex:
 
@@ -76,6 +76,12 @@
   {\ensuremath{#1\,:\,#2}}
  \newcommand{\depFun}[3] {
   {\ensuremath{\Pi_{\tjud{#1}{#2}}\,#3\,#1}}
+ }
+ \newcommand{\cprod}[2]
+  {\ensuremath{#1 \times #2}
+ }
+ \newcommand{\depPair}[3]
+ {\ensuremath{\Sigma_{(\tjud{#1}{#2})}\,#3\,#1}
  }
 
  
@@ -177,8 +183,8 @@ para el cálculo lambda simplemente tipado asegurando su corrección.
 
 \section{Teoría de tipos}
 
-En esta sección daremos un vistazo a las bases de la teoría de tipos de Martin Löf, haciendo
-un resumen del primer capítulo del libro (cita a homotopy types).
+En esta sección daremos un vistazo a las bases de la teoría de tipos de Martin Löf, basándonos
+en primer capítulo del libro (cita a homotopy types).
 
 \subsection{Teoría de tipos vs. Teoría de conjuntos}
 
@@ -193,8 +199,8 @@ Difiere de esta última en algunos aspectos importantes:
         lugar de tener dos nociones como "conjuntos" y "proposiciones", tiene solo una: los \textbf{tipos}.
         
   \item En el sistema deductivo de la teoría de conjuntos tenemos un solo tipo de juicios: Una proposición tiene una prueba. Las
-        reglas para construir estos juicios son del estilo "A partir de $A$ y $B$ se infiere $A \wedge B$". Un juicio (como
-        "$A$ tiene una prueba" existe a un nivel distinto al de una proposición en sí misma ($A$).
+        reglas para construir estos juicios son del estilo "A partir de $A$ y $B$ se infiere $A \wedge B$". Un juicio (
+        "$A$ tiene una prueba") existe a un nivel distinto al de una proposición en sí misma ($A$).
         
         En teoría de tipos el análogo a "$A$ tiene una prueba" es "$a\,:\,A$" ($a$ tiene tipo $A$). Si consideramos que el tipo
         $A$ representa una proposición, luego $a$ es la prueba que hace a la proposición $A$ cierta. De esta forma
@@ -213,7 +219,7 @@ Difiere de esta última en algunos aspectos importantes:
         dos elementos $a\,:\,A$, $b\,:\,A$, tenemos el tipo $a\,=_{A}\,b$. Si existe un elemento del tipo $a\,=_{A}\,b$, luego tenemos
         que $a$ y $b$ son proposicionalmente iguales.
         
-        Sin embargo en la teoría de tipos también tenemos otro tipo de igualdad, la igualdad por definición (o judgamental equality), la cual
+        Sin embargo en la teoría de tipos también tenemos otro tipo de igualdad, la igualdad por definición (o judgmental equality), la cual
         existe al mismo nivel que un juicio de tipado. Si definimos una función $f\,:\,\mathds{N} \rightarrow \mathds{N}$ mediante
         la ecuación $f(x)\,=\,x^2$, luego la expresión $f\,3$ es igual a $3^2$ \textbf{por definición}. Esta igualdad es algorítmicamente
         decidible y el chequeo es parte de la meta-teoría.
@@ -246,7 +252,7 @@ La misma definición mediante la abstacción lambda sería:
 sobre $x$ y $\Phi$. A partir de que la expresión tiene tipo $A \rightarrow B$, el tipo de la variable $x$ puede inferirse, por lo
 cual podemos omitir ponerlo explícitamente.
 
-Con la definición de funciones se introduce una \textbf{regla de computación}, la cual es una igualdad por definición (judgamental equality):
+Con la definición de funciones se introduce una \textbf{regla de computación}, la cual es una igualdad por definición (judgmental equality):
 \begin{align*}
   (\lambda\,x.\Phi)\,a\;\equiv\;\Phi'
 \end{align*}
@@ -264,7 +270,7 @@ $\tjud{f}{A \rightarrow B}$, se da la siguiente igualdad por definición:
 Como dijimos previamente, en teoría de tipos un elemento no existe en sí mismo si no que debe tener un tipo. Por lo tanto
 ¿qué son los tipos mismos? Un tipo $A$ también deberá tener un tipo. Usualmente se utiliza el término \textbf{universo}
 para referir al tipo cuyos elementos son tipos. Esto podría dar lugar a una paradoja, ya que si tenemos un tipo que contiene
-a todos los tipos, luego se contendría a sí mismo (la paradoja de Russell).
+a todos los tipos, en particular se contendría a sí mismo, y esto da lugar a una paradoja.
 
 Para evitar la paradoja se introduce una jerarquía en los universos
 \begin{align*}
@@ -304,10 +310,55 @@ Notemos que si pensamos a los tipos como proposiciones, y consideramos que una p
 el tipo que la representa tiene un elemento, el tipo de la función $f$ representa que \textit{para todo $\tjud{x}{A}$
 vale $B\,x$}.
 
-\subsection{Producto}
+\subsection{Otros tipos importantes}
 
-Dados dos tipos $\tjud{A}{U}$ y $\tjud{B}{U}$, introducimos el tipo $\tjud{A \times B}{U}$, al cual se lo suele llamar
-\textbf{producto cartesiano}.
+\subsubsection{Producto}
+
+Dados dos tipos $\tjud{A}{U}$ y $\tjud{B}{U}$, introducimos el tipo $\tjud{\cprod{A}{B}}{U}$, al cual se lo suele llamar
+\textbf{producto cartesiano}. A partir de un elemento $\tjud{a}{A}$ y un $\tjud{b}{B}$ podemos construir el elemento
+$\tjud{(a,b)}{\cprod{A}{B}}$. Junto con el constructor del tipo podemos definir dos funciones "eliminadoras" del tipo
+$\cprod{A}{B}$:
+\begin{align*}
+  &\tjud{pr_1}{\cprod{A}{B} \rightarrow A}\\
+  &\tjud{pr_2}{\cprod{A}{B} \rightarrow B}\\
+\end{align*}
+\noindent mediante
+\begin{align*}
+  &pr_1\,(a,b)\,=\,a\\
+  &pr_2\,(a,b)\,=\,b\\
+\end{align*}
+
+Podemos introducir un tipo 
+
+\subsubsection{Pares dependientes}
+
+De la misma forma que generalizamos el tipo de las funciones, podemos generalizar el de los pares, teniendo que el tipo
+del segundo componente del par, \textit{dependa} del tipo del primero.
+
+Dados un tipo $\tjud{A}{U}$ y una familia $\tjud{B}{A \rightarrow U}$ definimos el tipo de pares dependientes
+\begin{align*}
+\depPair{x}{A}{B}
+\end{align*}
+
+Para construir elementos de este tipo lo hacemos de la misma forma que con el producto, si tenemos $\tjud{a}{A}$, 
+en el segundo componente tendremos algún $\tjud{b}{B\,a}$. Las proyecciones se definen de la misma manera también.
+
+En el caso particular donde $B$ es constante, el tipo será el producto cartesiano.
+
+Observemos que para poder obtener un elemento del tipo $\depPair{x}{A}{B}$, necesitaremos encontrar
+un $\tjud{x}{A}$ de tal forma que el tipo $B\,x$ contenga un elemento. Es decir, el tipo $\depPair{x}{A}{B}$
+será habitado si \textit{existe} un elemento $\tjud{x}{A}$ tal que $B\,x$ es habitado. De la misma manera
+que pensamos al tipo de las funciones dependientes como el análogo al cuantificador universal de la teoría
+de conjuntos, el tipo de los pares dependientes es análogo al cuantificador existencial.
+
+\subsubsection{Coproducto}
+
+Dados $\tjud{A}{U}$, $\tjud{B}{U}$, introducimos el tipo $\tjud{A + B}{U}$, normalmente llamado como \textbf{coproducto} y
+que representa la unión disjunta en la teoría de conjuntos.
+
+Para construir un elemento de $\tjud{A + B}{U}$ tenemos dos maneras, a partir de un elemento $\tjud{a}{A}$, o a partir
+de uno $\tjud{b}{B}$ con los constructores $inl\,:\,A \rightarrow A + B$ y $inr\,:\,A \rightarrow A + B$ respectivamente
+(inyección izquierda o inyección derecha).
 
 \section{Agda}
 
@@ -584,7 +635,7 @@ que cumplen una cierta propiedad sobre un vector.
 
 \begin{verbatim}
 
-#-filter : {n : ℕ} {A : Set} → (A → Bool) → Vec A n → ℕ
+#-filter : {n : Nat} {A : Set} → (A → Bool) → Vec A n → Nat
 #-filter p empty = zero
 #-filter p (const x xs) with p x
 ... | true  = suc (#-filter p xs)
@@ -597,7 +648,7 @@ filter sobre los vectores.
 
 \begin{verbatim}
 
-filter : {n : ℕ} {A : Set} → 
+filter : {n : Nat} {A : Set} → 
          (p : A → Bool) → (xs : Vec A n) → Vec A (#-filter p xs)
 filter p empty = empty
 filter p (const x xs) with p x

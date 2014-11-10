@@ -542,10 +542,9 @@ Acá es donde la \textit{separación menos clara} entre tipos y valores de Agda
 (y los lenguajes con tipado dependiente en general) que mencionabamos antes
 nos puede resultar muy util.
 
-A continuación introducimos distintos conceptos (\comment{no se si 
-conceptos es la palabra que estoy buscando}) 
-de Agda con el fin de implementar el tipo de los vectores de un cierto tipo
-y tamaño, como anteriormente realizamos en Haskell.
+A continuación introducimos distintas características de los lenguajes con
+tipado dependiente, y de Agda en particular, con el fin de implementar el tipo
+de los vectores de un cierto tipo y tamaño, como anteriormente realizamos en Haskell.
 
 \subsection{Tipos de datos y pattern matching}
 
@@ -638,6 +637,17 @@ map : {A : Set} {B : Set} → (A → B) → List A → List B
 map {A} {B} _ [] = []
 map {B = B} f (x ∷ xs) = f x ∷ map f xs
 
+\end{verbatim}
+
+En este ejemplo se puede ver que para el caso de la lista vacia estamos usando
+ambos argumentos implicitos utilizando el orden en el que aparecen en el tipo
+de nuestra función. Otra posibilidad puede ser, como mencionamos antes, utilizar
+el nombre de la variable del tipo, en el caso de la lista con al menos un elemento
+\verb|B|, de manera evitar tener que utilizar el orden y como consecuencia tener
+que mencionar todos los argumentos implicitos para referencia al argumento deseado.
+
+\begin{verbatim}
+
 mapFromNat : {B : Set} → (Nat → B) → List Nat → List B
 mapFromNat = map {Nat}
 
@@ -645,6 +655,11 @@ mapToNat : {A : Set} → (A → Nat) → List A → List Nat
 mapToNat = map {B = Nat}
 
 \end{verbatim}
+
+Como antes, para pasar argumentos implicitos a una función podemos de nuevo
+utilizar el orden que determina el tipo de la función y el nombre de la variable
+en el tipo. Así entonces, en \verb|mapFromNat| estamos fijando el tipo \verb|A|
+y en \verb|mapToNat| estamos fijando el tipo \verb|B|.
 
 \subsection{Familias de tipos de datos}
 
@@ -683,6 +698,8 @@ es importante notar que la condición de exhaustividad del checkeador de tipos
 se cumple ya que no existe otra forma de construir algo de tipo \verb|Vec A (suc n)|
 que no sea con el constructor \verb|const|.
 
+\subsection{Mas sobre pattern matching}
+
 \subsubsection{Dotted patterns}
 Consideremos la función \verb|zip| sobre vectores que dados dos vectores
 de igual tamaño nos construye un vector de pares. Donde es importante
@@ -700,9 +717,9 @@ zip (const a as) (const b bs) = const (a , b) (zip as bs)
 \end{verbatim}
 
 Notar que el tipo de los elementos del vector resultante de haber
-aplicado \verb|zip| a dos vectores es \verb|A × B|, podemos
-ignorarlo por ahora y simplemente aclarar que se refiere al producto cartesiano
-cuyo constructor es \verb|(_,_)|.
+aplicado \verb|zip| a dos vectores es \verb|A × B|, este tipo
+se corresponde con el producto cartesiano definido en \comment{referencia
+a la sección 2.5}.
 
 Podemos pensar ahora que ocurre si hacemos pattern matching en el 
 argumento \verb|n : Nat| en el segundo caso
@@ -736,7 +753,7 @@ Como se menciona en \textit{citar Dependently Typed Programming in Agda}:
 La regla para saber si un argumento debe tener prefijado el punto es: \textit{Si existe
 un único valor para un argumento, este debe estar prefijado por el punto}.
 
-\subsubsection{Pattern con with }
+\subsubsection{Pattern con with}
 Introduzcamos ahora la sentencia \verb|with| que nos permite agregar mas
 argumentos a la función y realizar pattern matching de la forma usual, teniendo
 en cuenta la condición de exhaustividad. Asi por ejemplo
@@ -765,56 +782,6 @@ filter p empty = empty
 filter p (const x xs) with p x
 ... | true  = const x (filter p xs)
 ... | false = filter p xs
-
-\end{verbatim}
-
-\subsubsection{Producto dependiente}
-
-Anteriormente pasamos por alto el tipo \verb|_×_| mencionando simplemente
-que se correspondía con la noción de producto cartesiano. Siguiendo con
-esta idea la implementación del tipo de dato en Agda será
-
-\begin{verbatim}
-
-data _×_ (A : Set) (B : Set) : Set where
-  _,_ : A → B → A × B
-
-\end{verbatim}
-
-Ahora bien, así como pasamos de tener funciones como en Haskell
-a tener funciones dependientes, es interesante también generalizar el tipo de
-dato producto (×) para obtener lo que llamaremos producto dependiente.
-Considerando lo mencionado en la sección anterior, si tenemos un tipo
-\verb|A : Set| y \verb|B : A → Set| podemos construirnos un
-par pero donde el valor de la primera componente afecta a la segunda componente.
-
-Presentar la implementación esta fuera de la idea de esta sección;\footnote{Un 
-lector mas interesado puede encontrar la definición en el módulo Data.Product} y
-por esta razón simplemente presentamos la sintaxis necesaria y algunas
-funciones utiles. Teniendo en cuenta los tipos \verb|A| y \verb|B| 
-anteriores podemos escribir el tipo del producto dependiente como 
-\verb|Σ[ x ∈ A ] B x|, donde el constructor será \verb|_,_| y además
-dispondremos de dos funciones \verb|proj₁| y \verb|proj₂| que nos
-retornaran la primera y segunda componente de un par.
-
-Podemos entonces usando el producto dependiente implementar una
-versión del \verb|filter| mejorada, la cual no requiere calcular
-de antemano el tamaño del nuevo vector con los elementos filtrados.
-
-Tomando entonces \verb|Nat : Set| y \verb|Vec A : Nat → Set| podemos
-escribir el producto dependiente \verb|Σ[ m ∈ Nat ] Vec A m| \footnote{Otra posibilidad
-es escribir \verb|∃ (λ m → Vec Nat m)|, que se puede leer 
-como \textit{existe un m tal que...}}.
-
-\begin{verbatim}
-
-filter : {n : Nat} {A : Set} → 
-         (A → Bool) → Vec A n → Σ[ m ∈ Nat ] Vec A m
-filter p empty = zero , empty
-filter {n = suc n'} p (const y vec) with p y
-... | false = filter p vec
-... | true  = let (m , vec') = filter p vec
-              in (suc m , const y vec')
 
 \end{verbatim}
 
@@ -878,7 +845,7 @@ data ⊥ : Set where
 
 \end{verbatim}
 
-El hecho de nunca poder construir un elemento del tipo \verb|⊥| y utilizando el pattern absurdo,
+El hecho de nunca poder construir un elemento del tipo \verb|⊥| y con ayuda del pattern absurdo,
 podemos definir la función que llamaremos \verb|⊥-elim| y que implementará la idea
 de que \textit{falso implica cualquier cosa}
 
@@ -890,8 +857,8 @@ de que \textit{falso implica cualquier cosa}
 \end{verbatim}
 
 Por otro lado, ¿cómo será la implementación de la proposición \verb|True| (\verb|⊤|)?; esta
-vez necesitamos poder construir siempre un elemento, luego podemos implementarlo de la siguiente
-manera \footnote{La implementación original esta hecha utilizando records en \verb|Data.Unit|}
+vez necesitamos poder construir siempre un elemento, podemos entonces implementarlo de la siguiente
+manera \footnote{La implementación original se realiza utilizando records en \verb|Data.Unit|}
 
 \begin{verbatim}
 
@@ -927,11 +894,11 @@ decir, cualquier cosa es demostrable a partir de una contradicción
 
 \end{verbatim}
 
-Ahora bien, habiendo definido \verb|¬| nos permite definir una tipo de dato
+Ahora bien, habiendo definido \verb|¬| nos permite definir un tipo de dato
 que implemente la idea de que una proposición, o bien es cierta, o bien es falsa,
 construyendo la prueba que corresponda. Podemos pensar a este tipo de dato
 como el tipo \verb|Bool| pero con el agregado de que acarrea el valor o prueba
-del porque la proposición es cierta o porque es falsa.
+del por qué la proposición es cierta o porque es falsa.
 
 \begin{verbatim}
 
@@ -941,14 +908,30 @@ data Dec (P : Set) : Set where
 
 \end{verbatim}
 
+Como mencionamos antes, en la sección 2.5 \comment{referencia acá} mencionamos
+el producto cartesiano y como este mismo puede ser generalizado a lo que llamamos
+producto dependiente.\\
+
+Presentar la implementación esta fuera de la idea de esta sección;\footnote{Un 
+lector mas interesado puede encontrar la definición en el módulo Data.Product} y
+por esta razón simplemente presentamos la sintaxis necesaria y algunas
+funciones utiles. Considerando los tipos \verb|A : Set| y \verb|B : A → Set| 
+podemos escribir el tipo del producto dependiente como 
+\verb|Σ[ x ∈ A ] B x|, donde el constructor será \verb|_,_| y además
+dispondremos de dos funciones \verb|proj₁| y \verb|proj₂| que nos
+retornaran la primera y segunda componente de un par.
+
+
+
+
 \subsubsection{Pruebas}
 
 Hasta acá hemos hablado de las proposiciones y los tipos, pero poco acerca
 de los valores y las pruebas. Haciendo uso de lo que tenemos definido hasta
 el momento y definiendo algunas cosas nuevas probemos algunas propiedades.
 
-Podemos comenzar definiendo el tipo \textit{ser par} que nos construye
-una prueba de que un natural es par
+Podemos comenzar definiendo el tipo \textit{ser par} que nos permite construir
+una prueba de que un natural es par, si este efectivamente lo es.
 
 \begin{verbatim}
 
@@ -972,29 +955,19 @@ zeroIsEven = pz
 
 \end{verbatim}
 
-pensemos ahora en probar que \verb|2| y \verb|4| son pares definiendonos
-
-\begin{verbatim}
-
-two : Nat
-two = suc (suc zero)
-
-four : Nat
-four = suc (suc two)
-
-\end{verbatim}
-
+pensemos ahora en probar que \verb|2| y \verb|4| son pares teniendo
+en cuenta que \verb|2 = suc (suc zero)| y que \verb|4 = suc (suc 2)|
 de igual manera que con el \verb|0|, nos podemos construir funciones con tipos 
-\verb|IsEven two| y \verb|IsEven four|. Enfoquemos nos en probar paso por paso
+\verb|IsEven 2| y \verb|IsEven 4|. Enfoquemos nos en probar paso por paso
 que dos es par; tenemos que construir un valor de tipo \verb|IsEven (suc (suc zero))|,
 el constructor \verb|pz| no nos ayuda, pero si nos sirve el constructor \verb|psuc|, ahora
 bien este constructor nos construye algo de tipo \verb|IsEven (suc (suc zero))| siempre
-y cuando podamos pasarle algo de tipo \verb|IsEven zero|, afortunadamente \verb|pz| ahora
+y cuando podamos suministrarle algo de tipo \verb|IsEven zero|, afortunadamente \verb|pz| ahora
 si nos sirve, por lo tanto la prueba queda
 
 \begin{verbatim}
 
-twoIsEven : IsEven two
+twoIsEven : IsEven 2
 twoIsEven = psuc pz
 
 \end{verbatim}
@@ -1006,22 +979,22 @@ tipo \verb|IsEven (suc (suc zero))|, por suerte esta es la prueba de que dos es 
 
 \begin{verbatim}
 
-fourIsEven : IsEven four
+fourIsEven : IsEven 4
 fourIsEven = psuc twoIsEven
 
 \end{verbatim}
 
 Por otro lado, es interesante ver que no podemos probar que, por ejemplo, \verb|3| es
-par. Utilicemos el mismo razonamiento utilizado para \verb|2| y \verb|4|, necesitamos
-construirnos un valor de tipo \verb|IsEven (suc( suc (suc zero)))|.
+par. Utilicemos el mismo razonamiento que para \verb|2| y \verb|4|, necesitamos
+construirnos un valor de tipo \verb|IsEven (suc (suc (suc zero)))|.
 Usar \verb|pz| es imposible, pero podemos utilizar \verb|psuc|, luego necesitamos
 construirnos un valor de tipo \verb|IsEven (suc zero)|; pero acá no podemos usar
 \verb|pz|, ni \verb|psuc|.
 
-Esta forma de pensar la forma de contruir los valores o pruebas nos induce una
+Esta forma de pensar la manera de contruir los valores o pruebas nos induce una
 noción inductiva, ¿será posible entonces implementar una función que dado un
 natural nos construya una prueba, si es que puede, de que este natural es par?; La
-respuesta es si y para esto podemos hacer uso del tipo \verb|Dec|. Con el cual
+respuesta es sí y para esto podemos hacer uso del tipo \verb|Dec|. Con el cual
 vamos a tener, o bien una prueba de que el natural es par o bien una prueba de 
 la negación.
 
@@ -1059,16 +1032,17 @@ isEven (suc zero) = no (λ ())
 \end{verbatim}
 
 necesitamos construir un valor de tipo \verb|IsEven (suc zero)|, vimos antes que esto es imposible
-por lo tanto usamos el constructor \verb|no : ¬ IsEven (suc zero)  → Dec (IsEven (suc zero))|.
+por lo tanto usamos el constructor \verb|no| que tiene tipo 
+\verb|¬ IsEven (suc zero) → Dec (IsEven (suc zero))|.
 Necesitamos entonces construir un valor de tipo \verb|¬ IsEven (suc zero)|, pero si recordamos la
-definición de este tipo, tenemos que necesitamos un valor de tipo \verb|IsEven (suc zero) → ⊥|. Es
+definición de este tipo, tenemos que construirnos un valor de tipo \verb|IsEven (suc zero) → ⊥|. Es
 decir, necesitamos construir una función que toma algo de tipo \verb|IsEven (suc zero)| y retorna
 algo de tipo \verb|⊥|, por suerte ya vimos que es imposible construir un valor del tipo que requiere
 el argumento de la función, así que podemos usar el pattern absurdo utilizando la notación lambda
 para escribir funciones sin nombre\footnote{λ x → x, por ejemplo define la función identidad}.
 
 Pasamos ahora al caso final de pattern matching, \verb|suc (suc n)|, tenemos que construirnos
-una valor de tipo \verb|Dec (IsEven (suc (suc n)))|. Acá la solución ya no es tan directa y
+un valor de tipo \verb|Dec (IsEven (suc (suc n)))|. Acá la solución ya no es tan directa y
 tenemos que hacer uso de la recursión. Presentemos la implementación incompleta, donde solo
 figura el caso en el que \verb|n| resulta ser par
 
@@ -1088,7 +1062,8 @@ y \verb|even| nos construimos algo del tipo buscado y con \verb|yes| terminamos 
 la prueba de tipo \verb|Dec (IsEven (suc (suc n)))|. Ahora bien, ¿que tipo tiene la prueba que
 necesitamos construir para el caso en el que \verb|n| no es par?; necesitamos una prueba de tipo
 \verb|¬ IsEven (suc (suc n))| y tenemos además una prueba de que \verb|¬even : ¬ IsEven n|.
-Utilizando \verb|¬even| pensemos como construirnos una función de tipo \verb|¬ IsEven (suc (suc n))|,
+
+Utilizando \verb|¬even| podemos construirnos una función de tipo \verb|¬ IsEven (suc (suc n))|,
 recordando, de nuevo, que podemos ver a la negación como una función del tipo en \verb|⊥|. Luego
 podemos definir una función con tipo \verb|IsEven (suc (suc n)) → ⊥| de la siguiente manera
 
@@ -1103,7 +1078,7 @@ notar que como nuestra función toma algo de tipo \verb|IsEven (suc (suc n))| el
 constructor posible es el \verb|psuc| y por lo tanto el único caso de pattern matching
 es \verb|psuc pn|, donde \verb|pn : IsEven n|. Recordemos que necesitamos construir
 algo de tipo \verb|⊥|, teniendo en cuenta ahora \verb|pn|. Por suerte disponemos de
-\verb|¬even : IsEven n → ⊥|, luego aplicando tenemos el tipo deseado.
+\verb|¬even : IsEven n → ⊥|, luego solo nos resta aplicar para obtener el tipo deseado.
 
 Concluyendo, si juntamos todos los casos tenemos la implementación final de una función
 que dado un natural retorna la prueba de si este es par o no.
@@ -1122,7 +1097,38 @@ isEven (suc (suc n)) with isEven n
 
 \end{verbatim}
 
-- Faltaría comentar algunas cosas sobre \verb|≡| e introducir \verb|cong|.
+Podemos entonces usando el producto dependiente implementar una
+versión del \verb|filter| mejorada, la cual no requiere calcular
+de antemano el tamaño del nuevo vector con los elementos filtrados.
+
+Tomando entonces \verb|Nat : Set| y \verb|Vec A : Nat → Set| podemos
+escribir el producto dependiente \verb|Σ[ m ∈ Nat ] Vec A m| \footnote{Otra posibilidad
+es escribir \verb|∃ (λ m → Vec Nat m)|, que se puede leer 
+como \textit{existe un m tal que...}}.
+
+\begin{verbatim}
+
+filter : {n : Nat} {A : Set} → 
+         (A → Bool) → Vec A n → Σ[ m ∈ Nat ] Vec A m
+filter p empty = zero , empty
+filter {n = suc n'} p (const y vec) with p y
+... | false = filter p vec
+... | true  = let (m , vec') = filter p vec
+              in (suc m , const y vec')
+
+\end{verbatim}
+
+
+\begin{verbatim}
+
+cong : {A B : Set} {n m : A} → (f : A → B) → n ≡ m → f n ≡ f m
+cong f refl = refl
+
+plusAssoc : (a : Nat) → (b : Nat) → (c : Nat) → (a + b) + c ≡ a + (b + c)
+plusAssoc zero b c = refl
+plusAssoc (suc a) b c = cong suc (plusAssoc a b c)
+
+\end{verbatim}
 
 \section{Un inferidor de tipos para el cálculo lambda certificado}
 

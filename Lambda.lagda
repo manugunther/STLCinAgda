@@ -39,7 +39,9 @@
  \date{}
  
  \usepackage{listings}
- 
+
+% Para escribir las reglas de tipado.
+\usepackage{bussproofs} 
 
 \usepackage{bigfoot}
  
@@ -612,9 +614,9 @@ Introducimos ahora las funciones dependientes, como funciones en las que en su s
 el tipo resultante puede depender de los valores de los argumentos. 
 
 En Agda podemos escribir \verb|(a : A) → B| como el tipo de una función que toma un \verb|a : A| y
-retorna algo de tipo \verb|B|, en el cual probablemente aparezca \verb|a| (lo que se corresponde
-al tipo $\depFun{x}{A}{B}$ que introdujimos en la sección 2. Podemos
-definir la función identidad por ejemplo como,
+retorna algo de tipo \verb|B|, en el cual probablemente aparezca \verb|a|(lo que se corresponde
+con el tipo $\depFun{x}{A}{B}$ que introdujimos en la sección 2). Podemos definir la 
+función identidad por ejemplo como,
 
 \begin{verbatim}
 
@@ -623,23 +625,19 @@ id _ = λ x → x
 
 \end{verbatim}
 
-Esta función toma un tipo \verb|A| y retorna la función identidad para ese tipo. Ahora bien, algo que podría
-ocurrir es que el tipo resultante dependa de muchos argumentos ocasionando que nuestra función
-se sature de estos, cuando probablemente la gran mayoría no seán los argumentos
-\textit{realmente esperados} de la función, para evitar esto y poder implementar funciones que toman
-exactamente los parametros que \textit{esperamos}, es que en Agda se puede definir un tipo de argumento
-que llamaremos implicito. Por ejemplo,
-para el caso de la función identidad, deberíamos escribir \verb|id A a| en lugar de lo
-posiblemente esperado \verb|id a|. Podemos escribir un argumento como implícito simplemente encerrandolo entre
-llaves y de esta manera dejar que el checkeador de tipos de Agda intente inferir su valor. 
-Volviendo al ejemplo de la función identidad podemos escribir al argumento del tipo
-de la función identidad como implicito de la siguiente manera
+Esta función toma un tipo \verb|A| y retorna la función identidad para ese tipo. 
+Ahora bien, la implementación de la función identidad que dimos toma como primer
+argumento un tipo con el fin de modelar el polimorfismo de tipos, pero ahora sucede
+que para utilizar la función \verb|id| tenemos que suministrarle el tipo y la idea
+de las funciones polimorficas es evitar esto, dejando que el tipo sea inferido por
+el chequeador de tipos. Este problema se soluciona utilizando argumentos implicitos
+los cuales se escriben encerrandolos entre llaves. Siguiendo con el ejemplo ahora
+podemos implementar la función identidad de la siguiente manera
 
 \begin{verbatim}
 
 id : {A : Set} → A → A
 id = λ x → x
-
 \end{verbatim}
 
 La declaración de los argumentos como implicitos nos exime de tener que pasarlos al
@@ -656,12 +654,13 @@ map {B = B} f (x ∷ xs) = f x ∷ map f xs
 
 \end{verbatim}
 
-En este ejemplo se puede ver que para el caso de la lista vacia estamos usando
+En este ejemplo se puede ver que para el caso de pattern matching en la lista vacia estamos usando
 ambos argumentos implicitos utilizando el orden en el que aparecen en el tipo
-de nuestra función. Otra posibilidad puede ser, como mencionamos antes, utilizar
-el nombre de la variable del tipo, en el caso de la lista con al menos un elemento
-\verb|B|, de manera evitar tener que utilizar el orden y como consecuencia tener
-que mencionar todos los argumentos implicitos para referencia al argumento deseado.
+de nuestra función. Otra posibilidad es, como mencionamos antes, utilizar
+el nombre de la variable del tipo, por ejemplo en el caso en que la lista tiene
+al menos un elemento podemos utilizar el nombre de variable \verb|B|,
+de manera de evitar tener que utilizar el orden y como consecuencia tener
+que mencionar todos los argumentos implicitos (previos) para referencia al argumento deseado.
 
 \begin{verbatim}
 
@@ -925,21 +924,39 @@ data Dec (P : Set) : Set where
 
 \end{verbatim}
 
-Como mencionamos antes, en la sección 2.5 \comment{referencia acá} mencionamos
-el producto cartesiano y como este mismo puede ser generalizado a lo que llamamos
-producto dependiente.\\
+Por otro lado, podemos presentar además la noción de cuantificador existencial,
+la cual como mencionamos antes, en la sección \comment{alguna referencia acá} se
+corresponde con la idea de producto dependiente.\\
 
-Presentar la implementación esta fuera de la idea de esta sección;\footnote{Un 
+Mostrar la implementación esta fuera de la idea de esta sección;\footnote{Un 
 lector mas interesado puede encontrar la definición en el módulo Data.Product} y
 por esta razón simplemente presentamos la sintaxis necesaria y algunas
 funciones utiles. Considerando los tipos \verb|A : Set| y \verb|B : A → Set| 
 podemos escribir el tipo del producto dependiente como 
-\verb|Σ[ x ∈ A ] B x|, donde el constructor será \verb|_,_| y además
+\verb|Σ[ x ∈ A ] B x|\footnote{Otra posibilidad
+es escribir \verb|∃ (λ x → B x)|, que se puede leer 
+como \textit{existe un x tal que B x}}, donde el constructor será \verb|_,_| y además
 dispondremos de dos funciones \verb|proj₁| y \verb|proj₂| que nos
 retornaran la primera y segunda componente de un par.
 
+Podemos entonces usando el producto dependiente implementar una
+versión del \verb|filter| mejorada, la cual no requiere calcular
+de antemano el tamaño del nuevo vector con los elementos filtrados.
 
+Tomando entonces \verb|Nat : Set| y \verb|Vec A : Nat → Set| podemos
+escribir el producto dependiente \verb|Σ[ m ∈ Nat ] Vec A m|.
 
+\begin{verbatim}
+
+filter : {n : Nat} {A : Set} → 
+         (A → Bool) → Vec A n → Σ[ m ∈ Nat ] Vec A m
+filter p empty = zero , empty
+filter {n = suc n'} p (const y vec) with p y
+... | false = filter p vec
+... | true  = let (m , vec') = filter p vec
+              in (suc m , const y vec')
+
+\end{verbatim}
 
 \subsubsection{Pruebas}
 
@@ -1114,38 +1131,46 @@ isEven (suc (suc n)) with isEven n
 
 \end{verbatim}
 
-Podemos entonces usando el producto dependiente implementar una
-versión del \verb|filter| mejorada, la cual no requiere calcular
-de antemano el tamaño del nuevo vector con los elementos filtrados.
-
-Tomando entonces \verb|Nat : Set| y \verb|Vec A : Nat → Set| podemos
-escribir el producto dependiente \verb|Σ[ m ∈ Nat ] Vec A m| \footnote{Otra posibilidad
-es escribir \verb|∃ (λ m → Vec Nat m)|, que se puede leer 
-como \textit{existe un m tal que...}}.
+Finalizando con esta sección podemos pensar en dar una prueba de que
+la asociatividad de la suma es valida. Para esto primero vamos a definirnos
+la función \verb|cong|(ruence) para el tipo \verb|Nat|
 
 \begin{verbatim}
 
-filter : {n : Nat} {A : Set} → 
-         (A → Bool) → Vec A n → Σ[ m ∈ Nat ] Vec A m
-filter p empty = zero , empty
-filter {n = suc n'} p (const y vec) with p y
-... | false = filter p vec
-... | true  = let (m , vec') = filter p vec
-              in (suc m , const y vec')
+cong : {A B : Set} {x y : A} → (f : A → B) → x ≡ y → f x ≡ f y
 
 \end{verbatim}
 
+la implementación de esta función se puede encontrar en el módulo 
+\verb|Relation.Binary.PropositionalEquality| y esta escapa
+a al fin de esta sección presentarla. Por lo tanto, simplemente diremos que 
+esta función dada una \verb|f : A → B| y una prueba de igualadad \verb|x ≡ y|
+nos construye una prueba de la igualdad \verb|f x ≡ f y|.
+
+Luego podemos definir la función \verb|plusAssoc|
 
 \begin{verbatim}
-
-cong : {A B : Set} {n m : A} → (f : A → B) → n ≡ m → f n ≡ f m
-cong f refl = refl
 
 plusAssoc : (a : Nat) → (b : Nat) → (c : Nat) → (a + b) + c ≡ a + (b + c)
 plusAssoc zero b c = refl
 plusAssoc (suc a) b c = cong suc (plusAssoc a b c)
 
 \end{verbatim}
+
+donde el primer caso de pattern matching es directo de notar que queremos
+construir una prueba que tenga tipo \verb|(zero + b) + c ≡ zero + (b + c)|
+pero que al aplicar la definición de la suma en ambos lados obtenemos que
+necesitamos una prueba de tipo \verb|b + c ≡ b + c|, por lo cual podemos
+utilizar \verb|refl|. Para el segundo caso de pattern matching necesitamos
+construirnos una prueba de tipo \verb|((suc a) + b) + c ≡ (suc a) + (b + c)|,
+de nuevo, aplicando la definición de la suma, dos veces del lado izquierdo y una del
+lado derecho, obtenemos que necesitamos una prueba de tipo 
+\verb|suc ((a + b) + c) ≡ suc (a + (b + c))|. 
+
+Ahora bien, usando recursión tenemos que \verb|plusAssoc a b c| es una
+prueba de tipo \verb|(a + b) + c ≡ a + (b + c)|, por lo tanto podemos utilizar
+\verb|cong| aplicada a la función \verb|suc| y la prueba \verb|plusAssoc a b c|
+para obtener la prueba del tipo que buscamos.
 
 \section{Un inferidor de tipos para el cálculo lambda certificado}
 

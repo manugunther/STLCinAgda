@@ -163,12 +163,10 @@ mayor que cero:
   head (x ∷ xs) _ = x
 \end{verbatim}
 
-Ignorando de momento el primer caso de pattern matching \verb|head [] ()|, pensandolo
-simplemente como \textit{este caso no puede ocurrir nunca}.
-Con esta definición, para poder aplicar la función \verb|head| sobre una lista \verb|xs|
+Sin entrar en demasiados detalles, la línea \verb|head [] ()| expresa que este caso
+es absurdo. Teniendo esta definición vemos que para poder aplicar la función \verb|head| sobre una lista \verb|xs|
 tenemos que poder construir un elemento de \verb|0 < length xs|, lo que representa la
-prueba de que la lista no es vacía. Por lo tanto
-nunca podríamos tener en un programa una llamada a \verb|head []|.
+prueba de que la lista no es vacía. Por lo tanto nunca podríamos tener en un programa una llamada a \verb|head []|.
 
 Un lenguaje con estas características permite garantizar la correctitud mediante un sistema de tipos
 que permite escribir proposiciones lógicas como tipos mismos del lenguaje.

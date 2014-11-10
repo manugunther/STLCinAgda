@@ -75,7 +75,7 @@
  \newcommand{\tjud}[2]
   {\ensuremath{#1\,:\,#2}}
  \newcommand{\depFun}[3] {
-  {\ensuremath{\Pi_{\tjud{#1}{#2}}\,#3\,#1}}
+  {\ensuremath{\Pi_{(\tjud{#1}{#2})}\,#3\,#1}}
  }
  \newcommand{\cprod}[2]
   {\ensuremath{#1 \times #2}
@@ -310,38 +310,74 @@ Notemos que si pensamos a los tipos como proposiciones, y consideramos que una p
 el tipo que la representa tiene un elemento, el tipo de la función $f$ representa que \textit{para todo $\tjud{x}{A}$
 vale $B\,x$}.
 
-\subsection{Otros tipos importantes}
+\subsection{Definición de tipos de datos}
 
-\subsubsection{Producto}
+La teoría de tipos se construye mediante definiciones de tipos de datos. Para definir cualquier tipo
+se debe especificar:
 
-Dados dos tipos $\tjud{A}{U}$ y $\tjud{B}{U}$, introducimos el tipo $\tjud{\cprod{A}{B}}{U}$, al cual se lo suele llamar
-\textbf{producto cartesiano}. A partir de un elemento $\tjud{a}{A}$ y un $\tjud{b}{B}$ podemos construir el elemento
-$\tjud{(a,b)}{\cprod{A}{B}}$. Junto con el constructor del tipo podemos definir dos funciones "eliminadoras" del tipo
-$\cprod{A}{B}$:
+\begin{itemize}
+  \item \textbf{reglas de formación}, que definen la manera en que se forma el tipo (por ejemplo
+       se puede formar el tipo $A \rightarrow B$ a partir de $\tjud{A}{U}$ y $\tjud{B}{U}$.
+  \item \textbf{constructores}, que definen cómo construir elementos del tipo que se está definiendo (un constructor
+       es en general una función cuyo codominio es el tipo de dato a definir).
+  \item \textbf{eliminadores}, los cuales representan cómo usar los elementos del tipo (por ejemplo la aplicación
+       es el eliminador en el tipo de las funciones). Un eliminador es en general una función que toma entre
+       sus parámetros un elemento del tipo y retorna algo de otro tipo.
+  \item \textbf{regla de computación}, que corresponde a la definición del eliminador, es decir, expresa cómo 
+       un eliminador actúa sobre un constructor.
+  \item \textbf{principio de unicidad} opcional, que permite expresar para algunos tipos que todo elemento
+       del tipo está únicamente determinado por los resultados de aplicar eliminadores y que luego puede ser
+       reconstruido a partir de esos resultados aplicando un constructor (puede pensarse como el dual de la regla
+       de computación, que para las funciones se corresponde con la regla eta).
+\end{itemize}
+
+Veremos como ejemplo algunos tipos de datos de la teoría de tipos:
+\medskip
+
+\noindent \textbf{Producto}
+\smallskip
+
+\textbf{Regla de formación:} Dados dos tipos $\tjud{A}{U}$ y $\tjud{B}{U}$, introducimos el tipo $\tjud{\cprod{A}{B}}{U}$, al cual se lo suele llamar
+\textit{producto cartesiano}. 
+\smallskip
+
+\textbf{Constructor:} A partir de un elemento $\tjud{a}{A}$ y un $\tjud{b}{B}$ podemos construir el elemento
+$\tjud{(a,b)}{\cprod{A}{B}}$. 
+\smallskip
+
+\textbf{Eliminadores y regla de computación:} Podemos definir dos eliminadores del tipo:
 \begin{align*}
   &\tjud{pr_1}{\cprod{A}{B} \rightarrow A}\\
   &\tjud{pr_2}{\cprod{A}{B} \rightarrow B}\\
 \end{align*}
-\noindent mediante
+\noindent mediante las reglas de computación
 \begin{align*}
   &pr_1\,(a,b)\,=\,a\\
   &pr_2\,(a,b)\,=\,b\\
 \end{align*}
 
-Podemos introducir un tipo 
+\medskip
 
-\subsubsection{Pares dependientes}
+\noindent \textbf{Pares dependientes}
+\medskip
 
 De la misma forma que generalizamos el tipo de las funciones, podemos generalizar el de los pares, teniendo que el tipo
 del segundo componente del par, \textit{dependa} del tipo del primero.
+\smallskip
 
-Dados un tipo $\tjud{A}{U}$ y una familia $\tjud{B}{A \rightarrow U}$ definimos el tipo de pares dependientes
+\textbf{Regla de formación:} Dados un tipo $\tjud{A}{U}$ y una familia $\tjud{B}{A \rightarrow U}$ definimos el tipo de pares dependientes
 \begin{align*}
 \depPair{x}{A}{B}
 \end{align*}
+\smallskip
 
-Para construir elementos de este tipo lo hacemos de la misma forma que con el producto, si tenemos $\tjud{a}{A}$, 
-en el segundo componente tendremos algún $\tjud{b}{B\,a}$. Las proyecciones se definen de la misma manera también.
+\textbf{Constructores:} Para construir elementos de este tipo lo hacemos de la misma forma que con el producto, si tenemos $\tjud{a}{A}$, 
+en el segundo componente tendremos algún $\tjud{b}{B\,a}$. 
+\smallskip
+
+\textbf{Eliminadores y regla de computación:} Las proyecciones tal como las definimos para el producto también podemos definirlas
+aquí.
+\smallskip
 
 En el caso particular donde $B$ es constante, el tipo será el producto cartesiano.
 
@@ -350,15 +386,92 @@ un $\tjud{x}{A}$ de tal forma que el tipo $B\,x$ contenga un elemento. Es decir,
 será habitado si \textit{existe} un elemento $\tjud{x}{A}$ tal que $B\,x$ es habitado. De la misma manera
 que pensamos al tipo de las funciones dependientes como el análogo al cuantificador universal de la teoría
 de conjuntos, el tipo de los pares dependientes es análogo al cuantificador existencial.
+\medskip
 
-\subsubsection{Coproducto}
+\noindent \textbf{Coproducto}
+\smallskip
 
-Dados $\tjud{A}{U}$, $\tjud{B}{U}$, introducimos el tipo $\tjud{A + B}{U}$, normalmente llamado como \textbf{coproducto} y
+\textbf{Regla de formación:} Dados $\tjud{A}{U}$, $\tjud{B}{U}$, introducimos el tipo $\tjud{A + B}{U}$, normalmente llamado como \textbf{coproducto} y
 que representa la unión disjunta en la teoría de conjuntos.
+\smallskip
 
-Para construir un elemento de $\tjud{A + B}{U}$ tenemos dos maneras, a partir de un elemento $\tjud{a}{A}$, o a partir
-de uno $\tjud{b}{B}$ con los constructores $inl\,:\,A \rightarrow A + B$ y $inr\,:\,A \rightarrow A + B$ respectivamente
+\textbf{Constructores:} Para construir un elemento de $\tjud{A + B}{U}$ tenemos dos maneras, a partir de un elemento $\tjud{a}{A}$, o a partir
+de uno $\tjud{b}{B}$ con los constructores $inl\,:\,A \rightarrow A + B$ y $inr\,:\,B \rightarrow A + B$ respectivamente
 (inyección izquierda o inyección derecha).
+\smallskip
+
+\textbf{Eliminadores y regla de computación:} Observemos que si tenemos una función $\tjud{g_0}{A \rightarrow C}$ (es decir, que obtiene un elemento de $C$ a partir de uno
+de $A$) y otra función $\tjud{g_1}{B \rightarrow C}$ (obtiene un elemento de $C$ a partir de uno de $B$) podemos 
+definir una función $f$ que a partir de un elemento del coproducto $A + B$ obtenga un elemento de $C$:
+\begin{align*}
+  &\tjud{f}{A + B \rightarrow C}\\
+  &f\,(inl\,a)\,=\,g_0\,a\\
+  &f\,(inr\,b)\,=\,g_1\,a\\
+\end{align*}
+
+\noindent \textbf{Tipo vacío}
+\smallskip
+
+\textbf{Regla de formación:} Podemos considerar el tipo que no tiene ningún elemento, el tipo vacío $\mathbf{0}$.
+\smallskip
+
+\textbf{Constructores:} Puesto que no hay ningún elemento que tenga tipo $\mathbf{0}$, no tenemos constructores.
+\smallskip
+
+\textbf{Eliminadores y regla de computación:} Mediante un elminador podemos obtener un elemento de algún tipo $C$ a partir
+de los constructores del tipo que se está definiendo. Observemos que como no tenemos constructores podemos pensar que
+cualquier elemento puede obtenerse a partir del tipo vacío. Tenemos entonces un eliminador del tipo vacío que es una función
+que no toma argumentos y construye un elemento de cualquier tipo.
+\medskip
+
+\noindent \textbf{Tipo unario}
+\smallskip
+
+\textbf{Regla de formación:} Podemos considerar el tipo que contiene exactamente un elemento: $\mathbf{1}$.
+\smallskip
+
+\textbf{Constructores:} El tipo contendrá un solo constructor: $\tjud{*}{\mathbf{1}}$.
+\smallskip
+
+\textbf{Eliminadores y regla de computación:} La única manera de obtener un elemento de un tipo $C$ a partir del tipo
+unario es si ese elemento es tomando como argumento de la función de eliminación al mismo elemento. Entonces el eliminador
+del tipo $\mathbf{1}$ será una función $\tjud{g}{C \rightarrow \mathbf{1} \rightarrow C}$.
+
+\subsection{Proposiciones como tipos}
+
+Cuando revisamos las diferencias entre la teoría de conjuntos y la teoría de tipos, vimos que podemos tener una analogía entre
+las proposiciones lógicas y los tipos. Si un tipo representa una proposición, la misma será válida si se encuentra un elemento
+del tipo. Tenemos entonces una corresponencia entre la lógica constructivista y un lenguaje de programación con tipos de datos
+con las características que vimos previamente. Esta correspondencia fue observada por primera vez por Haskell Curry y William
+Howard y se la conoce como \textbf{"isomorfismo de Curry-Howard"}.
+
+Si observamos las reglas de la lógica proposicional podemos ver que las reglas de formación,
+de introducción y eliminación de los conectivos lógicos se corresponden con tipos. Por ejemplo
+la fórmula $A \wedge B$ se puede probar si se pueden probar las fórmulas $A$ y $B$. Podemos ver que
+el constructor del tipo $\cprod{A}{B}$ se corresponde directamente con esta regla: Para construir
+un elemento de $\cprod{A}{B}$, se necesita un elemento $\tjud{a}{A}$ y un $\tjud{b}{B}$. 
+
+De la misma manera que lo hicimos con el conectivo $\wedge$, podemos hacer una analogía con el resto de la lógica
+proposicional:
+
+\begin{itemize}
+  \item $\mathbf{True}$ se corresponde con $\mathbf{1}$.
+  \item $\mathbf{False}$ se corresponde con $\mathbf{0}$.
+  \item $\mathbf{A \wedge B}$ se corresponde con $\cprod{A}{B}$.
+  \item $\mathbf{A \vee B}$ se corresponde con $A + B$.
+  \item $\mathbf{A \Rightarrow B}$ se corresponde con $A \rightarrow B$.
+  \item $\mathbf{A \Leftrightarrow B}$ se corresponde con $\cprod{(A \rightarrow B)}{(B \rightarrow A)}$.
+  \item $\mathbf{\neg A}$ se corresponde con $A \rightarrow \mathbf{0}$.
+\end{itemize}
+
+Si consideramos la lógica de predicados, agregando los cuantificadores universal y existencial, tenemos
+también la siguiente correspondencia, como lo observamos previamente:
+
+\begin{itemize}
+  \item ($\forall x$, $P\,x$) se corresponde con $\depFun{x}{A}{B}$.
+  \item ($\exists x$, $P\,x$) se corresponde con $\depPair{x}{A}{B}$.
+\end{itemize}
+
 
 \section{Agda}
 

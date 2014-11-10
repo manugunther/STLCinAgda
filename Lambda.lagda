@@ -1201,6 +1201,11 @@ Ahora entonces los términos ($\lambda\,x_{\odot}\,.\,x$) y ($\lambda\,x_{\odot 
 y evitan cualquier tipo de ambigüedad para definir su tipado.
 \medskip
 
+Teniendo esta definición de los términos y tipos del cálculo lambda podemos definir los juicios de tipado 
+mediante las siguientes reglas:
+
+\comment{REGLAS}
+
 Implementaremos entonces esta versión del cálculo lambda simplemente tipado en Agda y una función $infer$ que
 dado un contexto $\pi$ y un término $t$, retorne si existe un tipo $\theta$ tal que $\pi \vdash t :: \theta$.
 

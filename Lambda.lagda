@@ -85,7 +85,10 @@
 
  \begin{document}
 
+
 \maketitle
+
+\tableofcontents
 
 %% Referencias: Type Theory and Functional Programming Simon Thompson
 %%              Homotopy Type Theory (Cap 1)
@@ -694,16 +697,270 @@ sería totalmente valido.} .
 Finalmente, cuando sucede que existe un pattern absurdo no tenemos que
 preocuparnos por dar una definición de función para ese caso.
 
-\subsection{Tipo Dec}
+\subsection{Tipos proposicionales y valores como pruebas}
 
-- Tipo vacio
-- Igualdad proposicional
-- Dec
+\comment{No se si es el mejor nombre para la sección}
 
-\subsection{Valores como pruebas}
-- Pruebas
+Al comienzo de la sección anterior se menciona que, considerando a un tipo
+\verb|A| como una proposición podemos decir que esta proposición es
+cierta si podemos construir un valor \verb|a| que tenga tipo \verb|A|. Además
+vale recordar que esto hace que teoría de tipos sea un sistema contructivista.
 
+Podemos pensar entonces como será la implementación de la proposición \verb|False| (\verb|⊥|) 
+como tipo de dato, la idea es que nunca podamos construirnos un valor de este tipo y
+por lo tanto podemos implementarlo simplemente como un tipo vacío
 
+\begin{verbatim}
+
+data ⊥ : Set where
+
+\end{verbatim}
+
+El hecho de nunca poder construir un elemento del tipo \verb|⊥| y utilizando el pattern absurdo,
+podemos definir la función que llamaremos \verb|⊥-elim| y que implementará la idea
+de que \textit{falso implica cualquier cosa}
+
+\begin{verbatim}
+
+⊥-elim : {Whatever : Set} → ⊥ → Whatever
+⊥-elim ()
+
+\end{verbatim}
+
+Por otro lado, ¿cómo será la implementación de la proposición \verb|True| (\verb|⊤|)?; esta
+vez necesitamos poder construir siempre un elemento, luego podemos implementarlo de la siguiente
+manera \footnote{La implementación original esta hecha utilizando records en \verb|Data.Unit|}
+
+\begin{verbatim}
+
+data ⊤ : Set where
+  tt : ⊤
+
+\end{verbatim}
+
+Siguiendo los pasos de la sección anterior, podemos introducir la igualdad de valores de un tipo,
+es decir que dados dos valores de un mismo tipo, \verb|a : A| y \verb|b : A| vamos
+a escribir \verb|a ≡ b : Set| para decir que los valores son iguales.
+
+\begin{verbatim}
+
+data _≡_ {A : Set} (x : A) : A → Set where
+  refl : x ≡ x
+
+\end{verbatim}
+
+Es importante notar que la definición de igualdad que estamos dando dice, dado
+un tipo \verb|A| y un elemento \verb|x : A| obtenemos una familia de 
+\textit{pruebas} o \textit{valores} tal que se es igual a \verb|x|.
+
+Podemos también implementar la negación proposicional, dado que tenemos
+un tipo \verb|P|, escribimos \verb|¬ P| para referirnos a la negación del tipo.
+Su implementación es directa de pensar en \textit{Principio de explosión}, es
+decir, cualquier cosa es demostrable a partir de una contradicción
+
+\begin{verbatim}
+
+¬_ : Set → Set
+¬ P = P → ⊥
+
+\end{verbatim}
+
+Ahora bien, habiendo definido \verb|¬| nos permite definir una tipo de dato
+que implemente la idea de que una proposición, o bien es cierta, o bien es falsa,
+construyendo la prueba que corresponda. Podemos pensar a este tipo de dato
+como el tipo \verb|Bool| pero con el agregado de que acarrea el valor o prueba
+del porque la proposición es cierta o porque es falsa.
+
+\begin{verbatim}
+
+data Dec (P : Set) : Set where
+  yes :   P → Dec P
+  no  : ¬ P → Dec P
+
+\end{verbatim}
+
+\subsubsection{Pruebas}
+
+Hasta acá hemos hablado de las proposiciones y los tipos, pero poco acerca
+de los valores y las pruebas. Haciendo uso de lo que tenemos definido hasta
+el momento y definiendo algunas cosas nuevas probemos algunas propiedades.
+
+Podemos comenzar definiendo el tipo \textit{ser par} que nos construye
+una prueba de que un natural es par
+
+\begin{verbatim}
+
+data IsEven : Nat → Set where
+  pz   : IsEven zero
+  psuc : {n : Nat} → IsEven n → IsEven (suc (suc n))
+
+\end{verbatim}
+
+Veamos algunos ejemplos para entender este tipo de dato, podemos
+empezar probando que el \verb|0|\footnote{En general usaremos las versiones
+sintacticamente azucaradas, salvo cuando haga falta mencionar su
+construcción original} es par escribiendo una función con tipo
+\verb|IsEven zero|, donde la prueba es utilizar el constructor
+\verb|pz| directamente
+
+\begin{verbatim}
+
+zeroIsEven : IsEven zero
+zeroIsEven = pz
+
+\end{verbatim}
+
+pensemos ahora en probar que \verb|2| y \verb|4| son pares definiendonos
+
+\begin{verbatim}
+
+two : Nat
+two = suc (suc zero)
+
+four : Nat
+four = suc (suc two)
+
+\end{verbatim}
+
+de igual manera que con el \verb|0|, nos podemos construir funciones con tipos 
+\verb|IsEven two| y \verb|IsEven four|. Enfoquemos nos en probar paso por paso
+que dos es par; tenemos que construir un valor de tipo \verb|IsEven (suc (suc zero))|,
+el constructor \verb|pz| no nos ayuda, pero si nos sirve el constructor \verb|psuc|, ahora
+bien este constructor nos construye algo de tipo \verb|IsEven (suc (suc zero))| siempre
+y cuando podamos pasarle algo de tipo \verb|IsEven zero|, afortunadamente \verb|pz| ahora
+si nos sirve, por lo tanto la prueba queda
+
+\begin{verbatim}
+
+twoIsEven : IsEven two
+twoIsEven = psuc pz
+
+\end{verbatim}
+
+si pensamos ahora la prueba de que \verb|4| es par, pasa algo parecido; necesitamos
+construir un valor de tipo \verb|IsEven (suc (suc (suc (suc zero))))|, para esto
+podemos utilizar de nuevo \verb|psuc| para lo cual necesitamos una prueba o valor de
+tipo \verb|IsEven (suc (suc zero))|, por suerte esta es la prueba de que dos es par
+
+\begin{verbatim}
+
+fourIsEven : IsEven four
+fourIsEven = psuc twoIsEven
+
+\end{verbatim}
+
+Por otro lado, es interesante ver que no podemos probar que, por ejemplo, \verb|3| es
+par. Utilicemos el mismo razonamiento utilizado para \verb|2| y \verb|4|, necesitamos
+construirnos un valor de tipo \verb|IsEven (suc( suc (suc zero)))|.
+Usar \verb|pz| es imposible, pero podemos utilizar \verb|psuc|, luego necesitamos
+construirnos un valor de tipo \verb|IsEven (suc zero)|; pero acá no podemos usar
+\verb|pz|, ni \verb|psuc|.
+
+Esta forma de pensar la forma de contruir los valores o pruebas nos induce una
+noción inductiva, ¿será posible entonces implementar una función que dado un
+natural nos construya una prueba, si es que puede, de que este natural es par?; La
+respuesta es si y para esto podemos hacer uso del tipo \verb|Dec|. Con el cual
+vamos a tener, o bien una prueba de que el natural es par o bien una prueba de 
+la negación.
+
+Comencemos definiendo el tipo de nuestra función, \verb|isEven|, que determina si un natural
+es par o no, \verb|isEven : (n : Nat) → Dec (IsEven n)| recordamos que este tipo
+tiene dos constructores con los siguientes tipos (ya pensando con \verb|IsEven| como
+proposición)
+
+\begin{verbatim}
+
+- yes :    IsEven n  → Dec (IsEven n)
+- no  : ¬ (IsEven n) → Dec (IsEven n)
+
+\end{verbatim}
+
+el primer caso de pattern matching es directo, esto es porque usando el constructor
+\verb|yes : IsEven zero  → Dec (IsEven zero)| necesitamos una prueba de tipo
+\verb|IsEven zero|, pero esto es utilizar el constructor \verb|pz|
+
+\begin{verbatim}
+
+isEven : (n : Nat) → Dec (IsEven n)
+isEven zero = yes pz
+
+\end{verbatim}
+
+notar que el siguiente caso de pattern matching es preguntarse que sucede con \verb|suc zero|,
+es decir \verb|zero| podría considerarse como el caso base para los pares y \verb|suc zero| como
+el caso base para los impares, analicemos esto detenidamente
+
+\begin{verbatim}
+
+isEven : (n : Nat) → Dec (IsEven n)
+isEven (suc zero) = no (λ ())
+\end{verbatim}
+
+necesitamos construir un valor de tipo \verb|IsEven (suc zero)|, vimos antes que esto es imposible
+por lo tanto usamos el constructor \verb|no : ¬ IsEven (suc zero)  → Dec (IsEven (suc zero))|.
+Necesitamos entonces construir un valor de tipo \verb|¬ IsEven (suc zero)|, pero si recordamos la
+definición de este tipo, tenemos que necesitamos un valor de tipo \verb|IsEven (suc zero) → ⊥|. Es
+decir, necesitamos construir una función que toma algo de tipo \verb|IsEven (suc zero)| y retorna
+algo de tipo \verb|⊥|, por suerte ya vimos que es imposible construir un valor del tipo que requiere
+el argumento de la función, así que podemos usar el pattern absurdo utilizando la notación lambda
+para escribir funciones sin nombre\footnote{λ x → x, por ejemplo define la función identidad}.
+
+Pasamos ahora al caso final de pattern matching, \verb|suc (suc n)|, tenemos que construirnos
+una valor de tipo \verb|Dec (IsEven (suc (suc n)))|. Acá la solución ya no es tan directa y
+tenemos que hacer uso de la recursión. Presentemos la implementación incompleta, donde solo
+figura el caso en el que \verb|n| resulta ser par
+
+\begin{verbatim}
+
+isEven : (n : Nat) → Dec (IsEven n)
+isEven (suc (suc n)) with isEven n
+... | yes even = yes (psuc even)
+... | no ¬even = no ¿?
+
+\end{verbatim}
+
+bien, usando \verb|with| podemos preguntarnos si \verb|n| es par o no. En caso de serlo
+es interesante notar que el tipo de la prueba es \verb|even : IsEven n|, donde nosotros
+necesitamos construir algo de tipo \verb|IsEven (suc (suc n))|. Por lo tanto usando \verb|psuc|
+y \verb|even| nos construimos algo del tipo buscado y con \verb|yes| terminamos de contruir
+la prueba de tipo \verb|Dec (IsEven (suc (suc n)))|. Ahora bien, ¿que tipo tiene la prueba que
+necesitamos construir para el caso en el que \verb|n| no es par?; necesitamos una prueba de tipo
+\verb|¬ IsEven (suc (suc n))| y tenemos además una prueba de que \verb|¬even : ¬ IsEven n|.
+Utilizando \verb|¬even| pensemos como construirnos una función de tipo \verb|¬ IsEven (suc (suc n))|,
+recordando, de nuevo, que podemos ver a la negación como una función del tipo en \verb|⊥|. Luego
+podemos definir una función con tipo \verb|IsEven (suc (suc n)) → ⊥| de la siguiente manera
+
+\begin{verbatim}
+
+¬isEven : ¬ IsEven (suc (suc n))
+¬isEven (psuc pn) = ¬even pn
+
+\end{verbatim}
+
+notar que como nuestra función toma algo de tipo \verb|IsEven (suc (suc n))| el único
+constructor posible es el \verb|psuc| y por lo tanto el único caso de pattern matching
+es \verb|psuc pn|, donde \verb|pn : IsEven n|. Recordemos que necesitamos construir
+algo de tipo \verb|⊥|, teniendo en cuenta ahora \verb|pn|. Por suerte disponemos de
+\verb|¬even : IsEven n → ⊥|, luego aplicando tenemos el tipo deseado.
+
+Concluyendo, si juntamos todos los casos tenemos la implementación final de una función
+que dado un natural retorna la prueba de si este es par o no.
+
+\begin{verbatim}
+
+isEven : (n : Nat) → Dec (IsEven n)
+isEven zero = yes pz
+isEven (suc zero) = no (λ ())
+isEven (suc (suc n)) with isEven n
+... | yes even = yes (psuc even)
+... | no ¬even = no ¬isEven
+  where
+    ¬isEven : ¬ IsEven (suc (suc n))
+    ¬isEven (psuc pn) = ¬even pn
+
+\end{verbatim}
+
+- Faltaría comentar algunas cosas sobre \verb|≡| e introducir \verb|cong|.
 
 \section{Un inferidor de tipos para el cálculo lambda certificado}
 

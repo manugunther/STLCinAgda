@@ -1,4 +1,4 @@
-\documentclass{article}
+\documentclass[spanish]{article}
 
  % The following packages are needed because unicode
  % is translated (using the next set of packages) to
@@ -7,16 +7,36 @@
 
  \usepackage{amssymb}
 
- \usepackage[greek,english]{babel}
+ \usepackage[spanish]{babel}
  \usepackage{amsmath}
  \usepackage{dsfont}
-
+  \usepackage[]{hyperref}
+  \hypersetup{
+    pdftitle={Tipos dependientes y Agda},
+    pdfauthor={Alejandro Gadea, Emmanuel Gunther},
+    pdfsubject={},
+    pdfkeywords={Teoría de tipos,Programación funcional,Tipos dependientes,Cálculo Lambda,Agda},
+    bookmarksnumbered=true,     
+    bookmarksopen=true,         
+    bookmarksopenlevel=1,       
+    colorlinks=false,            
+    pdfstartview=Fit,           
+    pdfpagemode=UseOutlines,    % this is the option you were lookin for
+    pdfpagelayout=TwoPageRight
+  }
+  
+ \addto\captionsspanish{
+  \renewcommand{\contentsname}%
+    {Indice}%
+}
+ 
  % This handles the translation of unicode to latex:
 
  \usepackage{ucs}
  \usepackage[utf8x]{inputenc}
  \usepackage{autofe}
 
+ \date{}
  
  \usepackage{listings}
  
@@ -95,14 +115,13 @@
 \maketitle
 
 \tableofcontents
-
+\newpage
 %% Referencias: Type Theory and Functional Programming Simon Thompson
 %%              Homotopy Type Theory (Cap 1)
 
 \section{Introducción}
 
 %% Referencia: Type Theory and Functional Programming Simon Thompson
-
 En cualquier sistema de computación se pretende obtener programas que satisfagan problemas
 de manera \textbf{correcta}. Si bien esto parece obviamente deseable, es algo difícil de lograr,
 y que en la práctica pocas veces sucede.
@@ -473,31 +492,30 @@ también la siguiente correspondencia, como lo observamos previamente:
 
 \section{Agda}
 
-En esta sección presentaremos varios conceptos de Agda con el fin introducir 
-todo lo necesario para la sección final en la cual se presenta la implementación
-del inferidor de tipos para el calculo lambda simplemente tipado. Es importante
-mencionar que todos los ejemplos, incluido el inferidor, fueron compilados con
-Agda 2.4.2.
+En esta sección presentaremos el lenguaje de programación con tipos dependientes \textbf{Agda}
+(referencia a Agda). Estudiaremos brevemente alguna de sus características y la manera
+de expresar los principales conceptos de la teoría de tipos.
 
-Sin embargo la sección en si se puede considerarse auto contenida, salvo algunas
+Se pretende que la sección sea autocontenida, salvo algunas
 menciones a la sección anterior, y por lo tanto una introducción para quien
-se este iniciando en la programación en Agda. Por otro lado, si el lector
+se esté iniciando en la programación en Agda. Por otro lado, si el lector
 conoce conceptos como; tipos de datos, pattern matching, funciones dependientes,
 familias de tipos de datos, sentencia \verb|with|, argumentos implicitos,
 dotted patterns, etc. Una opción puede ser dirigirse directo a la sección
 siguiente.
 
-
+Es importante mencionar que todos los ejemplos fueron compilados con
+Agda 2.4.2.
 
 \subsection{Introduciendo Agda}
 
-En lenguajes como Haskell existe una linea bien marcada entre los tipos
+En lenguajes como Haskell existe una división bien marcada entre los tipos
 (\verb|Int|, \verb|Bool|, \verb|String|, etc) y los valores (\verb|0|,
 {\verb|True|, {\verb|"Haskell"|, etc). En cambio en lenguajes con
 tipos dependientes, como Agda, esta separación es menos clara. 
 
-Para ejemplificar esto consideremos los clasicos vectores de algún tipo
-con tamaño fijo, podemos pensar en la siguiente implementación en
+Para ejemplificar ésto consideremos los clásicos vectores de algún tipo
+con tamaño fijo. Podemos pensar en la siguiente implementación en
 Haskell,
 
 \begin{verbatim}
@@ -512,7 +530,7 @@ data Vec a n where
 
 \end{verbatim}
 
-donde definimos los tipos \verb|Zero| y \verb|Suc n| sin constructores
+\noindent donde definimos los tipos \verb|Zero| y \verb|Suc n| sin constructores
 con la finalidad de usarlos como \textit{valores} y de esta manera restringir
 el tipo \verb|Vec|. A continuación podemos implementar la función que toma
 el primer elemento de un vector, como
@@ -524,31 +542,31 @@ head (Const e _) = e
   
 \end{verbatim}
 
-la particularidad de esta implementación es que durante el checkeo de tipos
+La particularidad de esta implementación es que durante el chequeo de tipos
 estamos eliminando la posibilidad de escribir \verb|head Empty|, donde 
 si recordamos la implementación de \verb|head| realizada en la introducción,
 esta nueva implementación sobre listas de cierto tamaño nos ahorra la prueba de 
 que el tamaño de la lista es mayor que 0. Ahora bien, 
 esta implementación parece razonable
-y comoda de entender; el vector vacio tiene tamaño \verb|Zero| y si agrego
+y cómoda de entender; el vector vacío tiene tamaño \verb|Zero| y si agrego
 un elemento \verb|e| a un vector con tipo \verb|Vec a n| (de tamaño \verb|n|) esto
 me construye un vector de tamaño \verb|Suc n|. Lamentablemente la utilización
-de los tipos como valores no solo no parece una forma prolija de usar los
-tipos, si no que utilizar una idea similar pero ahora donde los valores a
-\textit{imitar} con tipos son mas complejos podría derivar en implementaciones
-dificiles de entender o directamente malas.
+de los tipos como valores no sólo no parece una forma prolija de usar los
+tipos, si no que para utilizar una idea similar pero ahora donde los valores a
+\textit{imitar} con tipos son mas complejos, podría derivar en implementaciones
+difíciles de entender o directamente malas.
 
-Acá es donde la \textit{separación menos clara} entre tipos y valores de Agda
-(y los lenguajes con tipado dependiente en general) que mencionabamos antes
-nos puede resultar muy util.
+En este punto es donde la \textit{separación menos clara} entre tipos y valores de Agda
+(y los lenguajes con tipado dependiente en general) que mencionábamos antes
+nos puede resultar muy útil.
 
-A continuación introducimos distintas características de los lenguajes con
-tipado dependiente, y de Agda en particular, con el fin de implementar el tipo
-de los vectores de un cierto tipo y tamaño, como anteriormente realizamos en Haskell.
+A continuación introducimos distintas características del lenguaje Agda 
+con el fin de implementar el tipo de los vectores de un cierto tipo y tamaño, 
+como anteriormente realizamos en Haskell.
 
 \subsection{Tipos de datos y pattern matching}
 
-Empezamos entonces introduciendo la forma de declarar tipos de datos
+Empecemos introduciendo la forma de declarar tipos de datos
 \textit{como los de Haskell}. Podemos definir el tipo \verb|Nat| de los 
 números naturales de la siguiente manera
 
@@ -560,23 +578,20 @@ data Nat : Set where
 
 \end{verbatim}
 
-Haciendo la comparación con la implementación en Haskell, notar que ahora
-\verb|zero| y \verb|suc| son valores de tipo \verb|Nat| y
-no tipos en si mismos, además escribiendo \verb|Nat : Set| nos referimos a que \verb|Nat|
-tendrá tipo \verb|Set| que bien podriamos
-pensarlo como \textit{el tipo de los tipos}. Podemos definir funciones por
+\verb|Nat| tendrá el tipo \verb|Set|, que representa el tipo de los tipos de datos
+(en la sección 2 le llamamos $U$) y sus constructores serán \verb|zero| y \verb|suc|, 
+mediante los cuales podemos obtener elementos del tipo que estamos definiendo.
+
+Podemos definir funciones por
 pattern matching como hacemos en haskell, pero con la importante salvedad de que
 estamos obligados a cubrir todos los casos debido a que Agda no admite programas
 que no terminen, de ser el caso el chequeador de tipos nos dará un error.
 
 Como ejemplo de función, definimos la suma de dos naturales. Aprovechamos para mencionar que
-Agda es muy flexible con los nombres de funcion (constructores, tipos, etc) cualquier
-secuencia sin espacios de símbolos puede ser considerado un nombre valido, además
+Agda es muy flexible con los nombres de función (constructores, tipos, etc) cualquier
+secuencia de símbolos sin espacios puede ser considerado un nombre válido, además
 para declarar operadores infijos se hace uso del \verb|_| de manera tal que al
 usar el operador se puede utilizar por ejemplo como \verb|n + m| o \verb|_+_ n m|.
-Donde es importante la separación por espacios, escribir \verb|n+m| no es igual a
-\verb|n + m| por lo dicho anteriormente; cualquier secuencia sin espacios de símbolos
-es un nombre de variable valido.
 
 \begin{verbatim}
 
@@ -586,17 +601,19 @@ suc n + m = suc (n + m)
 
 \end{verbatim}
 
-Teniendo en cuenta la exigencia de terminación que impone Agda, notar que en
-el segundo caso de pattern matching es valido ya que el primer argumento de
-la suma se vuelve mas chico.
+Teniendo en cuenta la exigencia de terminación que impone Agda, notar que
+el segundo caso de pattern matching es válido ya que el primer argumento de
+la suma se vuelve más chico.
 
 \subsection{Funciones dependientes y argumentos implicitos}
 
-Hasta acá repasamos como escribir tipos de dato y funciones de Haskell, en Agda.
+Hasta acá repasamos como escribir tipos de datos y funciones de Haskell, en Agda.
 Introducimos ahora las funciones dependientes, como funciones en las que en su signatura
-el tipo resultante puede depender de los valores de los argumento. En Agda podemos
-escribir \verb|(a : A) → B| como el tipo de una función que toma un \verb|a : A| y
-retorna algo de tipo \verb|B|, en el cual probablemente aparezca \verb|a|. Podemos
+el tipo resultante puede depender de los valores de los argumentos. 
+
+En Agda podemos escribir \verb|(a : A) → B| como el tipo de una función que toma un \verb|a : A| y
+retorna algo de tipo \verb|B|, en el cual probablemente aparezca \verb|a| (lo que se corresponde
+al tipo $\depFun{x}{A}{B}$ que introdujimos en la sección 2. Podemos
 definir la función identidad por ejemplo como,
 
 \begin{verbatim}
@@ -613,7 +630,7 @@ se sature de estos, cuando probablemente la gran mayoría no seán los argumento
 exactamente los parametros que \textit{esperamos}, es que en Agda se puede definir un tipo de argumento
 que llamaremos implicito. Por ejemplo,
 para el caso de la función identidad, deberíamos escribir \verb|id A a| en lugar de lo
-posiblemente esperado \verb|id a|. Podemos escribir un argumento como implicitos simplemente encerrandolo entre
+posiblemente esperado \verb|id a|. Podemos escribir un argumento como implícito simplemente encerrandolo entre
 llaves y de esta manera dejar que el checkeador de tipos de Agda intente inferir su valor. 
 Volviendo al ejemplo de la función identidad podemos escribir al argumento del tipo
 de la función identidad como implicito de la siguiente manera
@@ -683,7 +700,7 @@ tipo \verb|Vec A zero| y dado un elemento \verb|e : A| y un vector \verb|v : Vec
 \verb|const e v| nos construye un vector de tamaño \verb|suc n| con tipo \verb|Vec A (suc n)|.
 
 Esta implementación es bastante similar a la hecha anteriormente
-en Haskell, pero con la diferencia importante que \verb|n| es un valor y no un tipo. 
+en Haskell, pero con la diferencia importante de que \verb|n| es un valor y no un tipo. 
 
 Ahora podemos implementar la función que toma el primer elemento
 
@@ -1132,7 +1149,38 @@ plusAssoc (suc a) b c = cong suc (plusAssoc a b c)
 
 \section{Un inferidor de tipos para el cálculo lambda certificado}
 
+Como dijimos en la introducción de este trabajo, los lenguajes con tipos dependientes permiten
+asegurar propiedades del software en la construcción del mismo, mediante un sistema de tipos
+fuerte.
+
+Como ejercicio para ejemplificar el poder de expresividad de estos lenguajes, realizaremos
+una implementación de la inferencia de tipos para una versión del cálculo lambda simplemente tipado
+en el lenguaje \textbf{Agda}.
+
 \subsection{Descripción del problema}
+
+El cálculo lambda es la base de los lenguajes de programación funcionales. En el mismo
+se puede representar la computación mediante la transformación de expresiones utilizando
+una única regla de reducción (la regla beta) lo que lo convierte en un sencillo y poderoso
+sistema formal para estudiar los principales conceptos de computación.
+
+Una expresión o un término del cálculo lambda se define mediante las siguientes reglas:
+
+\begin{itemize}
+  \item Una variable es un término.
+  \item Dados un término $t$ y una variable $x$, la abstracción $\lambda\,x.t$ es un término.
+  \item Dados dos términos $t_0$, $t_1$, la aplicación $t_0\;t_1$ es un término.
+\end{itemize}
+
+A este lenguaje de expresiones podemos agregarle un sistema de tipos sencillo:
+
+\begin{itemize}
+  \item $\odot$ es un tipo.
+  \item Si $\theta_0$ y $\theta_1$ son tipos, $\theta_0 \mapsto \theta_1$ es un tipo.
+\end{itemize}
+
+El cálculo lambda simplemente tipado
+
 
 Como ejercicio práctico para entender la programación con tipos dependientes
 nos propusimos implementar un inferidor de tipos para el cálculo lambda, el cual

@@ -1157,6 +1157,8 @@ Como ejercicio para ejemplificar el poder de expresividad de estos lenguajes, re
 una implementación de la inferencia de tipos para una versión del cálculo lambda simplemente tipado
 en el lenguaje \textbf{Agda}.
 
+Para esta sección se asume que el lector conoce los conceptos básicos del cálculo lambda.
+
 \subsection{Descripción del problema}
 
 El cálculo lambda es la base de los lenguajes de programación funcionales. En el mismo
@@ -1179,29 +1181,40 @@ A este lenguaje de expresiones podemos agregarle un sistema de tipos sencillo:
   \item Si $\theta_0$ y $\theta_1$ son tipos, $\theta_0 \mapsto \theta_1$ es un tipo.
 \end{itemize}
 
-El cálculo lambda simplemente tipado
+Un juicio de tipado expresará si un término $t$ bajo un contexto de asignaciones 
+de tipos a variables $\pi$ tiene algún tipo $\theta$, el cual es único. Normalmente a un juicio
+de tipado lo escribimos $\pi \vdash t :: \theta$.
 
+Observemos que al contar solamente con un tipo básico $\odot$ la unicidad del tipado de expresiones
+no podemos asegurarla: Consideremos como ejemplo la expresión "identidad" $\lambda\,x\,.\,x$. Este término representa
+la función que toma un valor y lo retorna. Observemos que podríamos pensar que tiene tipo ($\odot \mapsto \odot$), pero
+también podría ser $(\odot \mapsto \odot) \mapsto (\odot \mapsto \odot)$, con lo cual violaríamos la noción
+de unicidad que queremos tener en nuestros juicios de tipado.
+Por esta razón modificamos la definición de términos del cálculo lambda agregando en la abstracción una anotación del tipo que debe tener
+la variable:
+\begin{itemize}
+  \item Una variable es un término.
+  \item Dados un término $t$, una variable $x$ y un tipo $\theta$ la abstracción $\lambda\,x_{\theta}\,.\,x$ es un término.
+  \item Dados dos términos $t_0$, $t_1$, la aplicación $t_0\;t_1$ es un término.
+\end{itemize}
+Ahora entonces los términos ($\lambda\,x_{\odot}\,.\,x$) y ($\lambda\,x_{\odot \mapsto \odot}\,.\,x$) son distintos
+y evitan cualquier tipo de ambigüedad para definir su tipado.
+\medskip
 
-Como ejercicio práctico para entender la programación con tipos dependientes
-nos propusimos implementar un inferidor de tipos para el cálculo lambda, el cual
-dado un término $t$ y un contexto de asignaciones de tipos a variables $\pi$, retorne
-si existe un tipo $\theta$ tal que $\pi \vdash t :: \theta$ (el término $t$ tiene tipo $\theta$
-bajo el contexto $\pi$) o si no existe, en cuyo caso deberá retornar una función que dado
-un juicio de tipado $\pi \vdash t :: \theta$ podemos obtener $\bot$ (el tipo vacío), lo cual 
-representa una prueba de que para todo tipo $\theta$ no existe juicio de tipado.
+Implementaremos entonces esta versión del cálculo lambda simplemente tipado en Agda y una función $infer$ que
+dado un contexto $\pi$ y un término $t$, retorne si existe un tipo $\theta$ tal que $\pi \vdash t :: \theta$.
 
-Con el programa que queremos implementar no obtendremos solo un resultado para nuestro problema, sino
-también una \textbf{prueba} de que el resultado es el correcto.
+El tipo de la función que pretendemos implementar será entonces:
 
-Por cuestiones de simplicidad, no consideraremos variables de tipo, por lo que un tipo
-podrá ser el tipo básico $\odot$ o dados dos tipos $\theta_1$ y $\theta_2$, el tipo $\theta_1 \mapsto \theta_2$.
+\begin{verbatim}
+infer : (π : Ctx) → (t : LambdaTerm) → Dec (∃ (λ θ → π ⊢ t ∷ θ))
+\end{verbatim}
 
-Esto nos obliga a que en la abstracción lambda debemos anotar el tipo de la variable, caso contrario por ejemplo
-para el término $id = \lambda\,x\,.\,x$ no podríamos distinguir si tiene tipo ($\odot \mapsto \odot$) ó 
-$(\odot \mapsto \odot) \mapsto (\odot \mapsto \odot)$, etc. Anotando el tipo de la variable
-los términos ($\lambda\,x_{\odot}\,.\,x$) y ($\lambda\,x_{\odot \mapsto \odot}\,.\,x$) son distintos
-y evitan esta ambigüedad.
-
+\noindent asumiendo definidos los contextos y los términos lambda. Como vimos en la sección previa, el tipo
+\verb|Dec| parametrizado en algún tipo \verb|A| permite representar o bien un elemento de $A$ (mediante el constructor
+\verb|yes|), o bien un tipo de \verb|\not A| (mediante el constructor \verb|no|). Notemos entonces que el resultado
+de la implementación que buscamos contendrá entonces una prueba de si existe o no un tipo que permita tener
+un juicio de tipado válido.
 
 \subsection{Librerías auxiliares}
 
@@ -1211,17 +1224,11 @@ Para la implementación utilizaremos varias librerías de Agda:
 module Lambda where
 
 open import Data.String
--- Para la equivalencia de tipos:
 open import Relation.Binary.PropositionalEquality
-
--- Para el tipo Bottom y la negación de un tipo:
 open import Relation.Nullary
--- Para las 2-uplas:
 open import Data.Product
 open import Data.Empty
 open import Function
-
-
 \end{code}
 
 \agType{String}, para representar las variables de los términos. \agType{PropositionalEquality} tiene definido el tipo de la igualdad
@@ -1248,11 +1255,7 @@ Dada esta definición de tipos podemos definir la propiedad que asegura que dado
 dos tipos $\theta$ y $\theta'$ la igualdad entre ellos es decidible, es decir
 ó bien $\theta \equiv \theta'$ ó bien $\theta \not \equiv \theta'$. 
 
-Para la implementación procedemos de la misma manera en que definimos la igualdad
-de los números naturales en la sección 3, mediante el tipo \agType{Dec}:
-
 \begin{code}
-
 cong⟼⁻¹ : ∀ {θ₁} {θ₂} {θ₁'} {θ₂'} → θ₁ ⟼ θ₂ ≡ θ₁' ⟼ θ₂' → θ₁ ≡ θ₁' × θ₂ ≡ θ₂'
 cong⟼⁻¹ refl = refl , refl
 
@@ -1267,7 +1270,6 @@ _≟ₜ_ : (θ₁ : Type) → (θ₂ : Type) → Dec (θ₁ ≡ θ₂)
       no (λ θ₁⟼θ₂≡θ₁'⟼θ₂' → ¬p (proj₁ (cong⟼⁻¹ θ₁⟼θ₂≡θ₁'⟼θ₂')))
 θ₁ ⟼ θ₂ ≟ₜ θ₁' ⟼ θ₂' | _ | no ¬p      = 
       no (λ θ₁⟼θ₂≡θ₁'⟼θ₂' → ¬p (proj₂ (cong⟼⁻¹ θ₁⟼θ₂≡θ₁'⟼θ₂')))
-
 \end{code}
 
 Definimos la igualdad entre dos tipos mediante recursión. Observemos que en el caso

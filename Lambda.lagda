@@ -1241,7 +1241,7 @@ infer : (π : Ctx) → (t : LambdaTerm) → Dec (∃ (λ θ → π ⊢ t ∷ θ)
 \end{verbatim}
 
 \noindent asumiendo definidos los contextos y los términos lambda. Como vimos en la sección previa, el tipo
-\verb|Dec| parametrizado en algún tipo \verb|A| permite representar o bien un elemento de $A$ (mediante el constructor
+\verb|Dec| parametrizado en algún tipo \verb|A| permite representar o bien un elemento de \verb|A| (mediante el constructor
 \verb|yes|), o bien un tipo de \verb|\not A| (mediante el constructor \verb|no|). Notemos entonces que el resultado
 de la implementación que buscamos contendrá entonces una prueba de si existe o no un tipo que permita tener
 un juicio de tipado válido.
@@ -1314,7 +1314,7 @@ Entonces si pudiéramos obtener $θ₁ \equiv θ₁'$ a partir de $θ₁ ⟼ θ�
 luego aplicamos $¬p$ y tenemos el resultado $\bot$ que queríamos.
 
 Pero observemos que como el constructor $⟼$ es una función inyectiva, si se da que 
-$θ₁ ⟼ θ₂ ≡ θ₁' ⟼ θ₂'$ entonces $θ₁ ≡ θ₁'$ y $θ₂ ≡ θ₂'$. La función $cong⟼⁻¹$ expresa
+$θ₁ ⟼ θ₂ ≡ θ₁' ⟼ θ₂'$ entonces $θ₁ ≡ θ₁'$ y $θ₂ ≡ θ₂'$. La función \verb|cong⟼⁻¹| expresa
 exactamente esto y nos permite completar la definición de la igualdad de tipos.
 
 \subsection{Términos del Cálculo Lambda}
@@ -1366,7 +1366,7 @@ $\pi$ al que se le agrega un par $(x,\theta)$ con una prueba de que $x$ no ocurr
          
 Si una variable $x$ no ocurre en un contexto $\pi$ es porque $\pi$ es vacío
 o porque $x$ no ocurre en la cola y es distinta a la variable de la cabeza de $\pi$. Esto
-expresan los constructores $∉ø$ y $∉¬ø$ respectivamente del tipo $∉$.
+expresan los constructores \verb|∉ø| y \verb|¬ø| respectivamente del tipo \verb|_∉_|.
          
 Con esta definición podemos definir una relación de equivalencia entre dos
 contextos:
@@ -1392,7 +1392,7 @@ symCtx (ctxEq π₀≈π₁) = ctxEq (symCtx π₀≈π₁)
 
 Esto nos permite considerar iguales a dos contextos que tengan los mismos
 pares (variable,tipo) pero que las pruebas que aseguran que cada variable no ocurre
-en el resto no sean exactamente las mismas (en la definción de $ctxEq$, $p$ puede
+en el resto no sean exactamente las mismas (en la definción de \verb|ctxEq|, $p$ puede
 ser distinto de $p'$ pero ambos expresan que la variable no pertenece al resto del contexto).
 \medskip
 
@@ -1443,7 +1443,7 @@ nos deja un pattern absurdo para el segundo parámetro de la función ya
 que no podemos construir un elemento de $(v , θ) ∈ ø$.
 
 El siguiente caso a contemplar es cuando $v$ no está en el contexto $\pi = ( v'  , θ' ) ▷ π' ｢ v'∉π' ｣$,
-representado por el constructor $∉¬ø$. Observemos que para definir este caso de pattern matching
+representado por el constructor \verb|∉¬ø|. Observemos que para definir este caso de pattern matching
 tendremos un elemento de $\neg (v \equiv v')$ y uno de $v ∉ \pi'$.
 
 Dentro de este caso tenemos dos opciones: $(v , θ) ∈ π$ para algún $\theta$ porque el par
@@ -1451,7 +1451,7 @@ se encuentra en la cabeza de $\pi$, o porque se encuentra en la cola, y esto est
 casos de pattern matching. En el primero de ellos observemos que tenemos un elemento de
 $v \equiv v'$, por lo cual podremos obtener $\bot$ ya que teníamos también que $\neg (v \equiv v')$.
 
-En el último caso el constructor $inTail$ contiene un elemento de $v \in \pi'$ pero también teníamos
+En el último caso el constructor \verb|inTail| contiene un elemento de $v \in \pi'$ pero también teníamos
 uno de $v ∉ \pi'$ por lo que podremos obtener $\bot$ utilizando una llamada recursiva.
 \medskip
 
@@ -1475,10 +1475,10 @@ de $(v , θ) ∈ π$), tendremos que obtener uno de $v ∉ π$:
 \end{code}
 
 Aquí podemos hacer pattern matching en el parámetro implícito $\pi$. Si es vacío
-entonces no tenemos otra opción para el valor de retorno que $∉ø$.
+entonces no tenemos otra opción para el valor de retorno que \verb|∉ø|.
 
 Si $\pi = (v' , θ') ▷ π' ｢ p ｣$ entonces el valor de retorno los construimos con 
-$∉¬ø$. Para ello necesitamos dos elementos: uno de tipo $v ∉ π'$ y otro de $¬ (v ≡ v')$.
+\verb|∉¬ø|. Para ello necesitamos dos elementos: uno de tipo $v ∉ π'$ y otro de $¬ (v ≡ v')$.
 Observemos que con lo único que contamos es con una función $t↑$ que dado un elemento de
 $(∃ (λ θ → (v , θ) ∈ π))$ retorna $\bot$. 
 
@@ -1580,6 +1580,11 @@ Los tres constructores se corresponden con las reglas de tipado del cálculo lam
         para $t₂$ con tipo $θ$ y contexto $\pi$.
 \end{itemize}
 
+De la misma forma que definimos algunas propiedades interesantes de los contextos de tipado, podemos
+definir propiedades de los juicios. Observemos que si tenemos que dos contextos $π₀$ y $π₁$ son equivalentes
+(bajo la noción de equivalencia que definimos), y que dos tipos $θ$ y $θ'$ son iguales, luego a partir
+del juicio $π₀ ⊢ t ∷ θ$ podríamos obtener el juicio $π₁ ⊢ t ∷ θ'$. Esto lo expresamos en la función
+\verb|changeCtx|:
 
 \begin{code}
 changeCtx : ∀ {π₀} {π₁} {t} {θ} {θ'} → π₀ ≈ π₁ → θ ≡ θ' → π₀ ⊢ t ∷ θ → π₁ ⊢ t ∷ θ'
@@ -1589,8 +1594,11 @@ changeCtx {π₀} {π₁} {t = λ' v ∶ θᵥ ⟶ t₀} {θ = .θᵥ ⟼ θ}
           _∣ₗ {p = change∉ π₀≈π₁ x∉π₀} (changeCtx (ctxEq π₀≈π₁) refl π₀⊢t∷θ) 
 changeCtx π₀≈π₁ refl (π₀⊢t∷θ ∧ π₀⊢t∷θ₁ ∣ₐ) =
         (changeCtx π₀≈π₁ refl π₀⊢t∷θ) ∧ (changeCtx π₀≈π₁ refl π₀⊢t∷θ₁ ) ∣ₐ
+\end{code}
 
 
+
+\begin{code}
 -- Si un termino se puede tipar con θ y θ', estos son iguales
 uniqueType : ∀ {π} {t} {θ} {θ'} → π ⊢ t ∷ θ → π ⊢ t ∷ θ' → θ ≡ θ'
 uniqueType (x,θ∈π ∣ᵥ) (x,θ'∈π ∣ᵥ) = uniqueTypeVar x,θ∈π x,θ'∈π

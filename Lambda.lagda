@@ -1229,7 +1229,20 @@ y evitan cualquier tipo de ambigüedad para definir su tipado.
 Teniendo esta definición de los términos y tipos del cálculo lambda podemos definir los juicios de tipado 
 mediante las siguientes reglas:
 
-\comment{REGLAS}
+\begin{center}
+\AxiomC{$(x,θ) ∈ π$}
+\UnaryInfC{$ π ⊢ x : θ$}
+\DisplayProof
+\quad
+\AxiomC{$π , (x,θ) ⊢ t : θ'$}
+\UnaryInfC{$ π ⊢ λ x_θ\,.\,t : θ → θ'$}
+\DisplayProof
+\quad
+\AxiomC{$π ⊢ t₀ : θ' → θ$}
+\AxiomC{$π ⊢ t₁ : θ'$}
+\BinaryInfC{$ π ⊢ t₀ \ t₁ : θ$}
+\DisplayProof
+\end{center}
 
 Implementaremos entonces esta versión del cálculo lambda simplemente tipado en Agda y una función $infer$ que
 dado un contexto $\pi$ y un término $t$, retorne si existe un tipo $\theta$ tal que $\pi \vdash t :: \theta$.

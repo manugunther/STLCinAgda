@@ -1255,8 +1255,8 @@ infer : (π : Ctx) → (t : LambdaTerm) → Dec (∃ (λ θ → π ⊢ t ∷ θ)
 
 \noindent asumiendo definidos los contextos y los términos lambda. Como vimos en la sección previa, el tipo
 \verb|Dec| parametrizado en algún tipo \verb|A| permite representar o bien un elemento de \verb|A| (mediante el constructor
-\verb|yes|), o bien un tipo de \verb|\not A| (mediante el constructor \verb|no|). Notemos entonces que el resultado
-de la implementación que buscamos contendrá entonces una prueba de si existe o no un tipo que permita tener
+\verb|yes|), o bien un tipo de \verb|¬ A| (mediante el constructor \verb|no|). Notemos entonces que el resultado
+de la implementación que buscamos contendrá una prueba de si existe o no un tipo que permita tener
 un juicio de tipado válido.
 
 \subsection{Librerías auxiliares}
@@ -1275,7 +1275,7 @@ open import Function
 \end{code}
 
 \agType{String}, para representar las variables de los términos. \agType{PropositionalEquality} tiene definido el tipo de la igualdad
-proposicional entre dos tipos, tal como lo explicamos en la sección 2. \agType{Nullary} para tener el tipo vacío $\bot$ y
+proposicional entre dos tipos, tal como lo explicamos en la sección 3. \agType{Nullary} para tener el tipo vacío $\bot$ y
 el tipo \agType{Dec}.
 \agType{Product} lo necesitamos para representar los pares (variable, tipo) en los contextos. \agType{Empty} tiene definido
 el eliminador de $\bot$, es decir, la función que dado $\bot$ retorna cualquier cosa. Por último
@@ -1356,7 +1356,9 @@ infixl 100 _●_
 
 Para poder dar un tipo a un término tenemos que asignarle tipos a las variables.
 Necesitamos entonces definir un contexto de asignación de variables a tipos, en el cual no queremos que
-una misma variable ocurra dos veces.
+una misma variable ocurra dos veces. Esta restricción es muy importante y forma parte de la especificación
+para definir contextos de tipado. Como veremos a continuación, esta restricción puede expresarse en
+un lenguaje como Agda.
 
 Definimos el tipo \agType{Ctx} junto con un tipo que dada una variable $x$ y un contexto $\pi$, expresa que 
 $x$ no ocurre en $\pi$:
@@ -1379,7 +1381,7 @@ $\pi$ al que se le agrega un par $(x,\theta)$ con una prueba de que $x$ no ocurr
          
 Si una variable $x$ no ocurre en un contexto $\pi$ es porque $\pi$ es vacío
 o porque $x$ no ocurre en la cola y es distinta a la variable de la cabeza de $\pi$. Esto
-expresan los constructores \verb|∉ø| y \verb|¬ø| respectivamente del tipo \verb|_∉_|.
+expresan los constructores \verb|∉ø| y \verb|∉¬ø| respectivamente del tipo \verb|_∉_|.
          
 Con esta definición podemos definir una relación de equivalencia entre dos
 contextos:
@@ -1424,54 +1426,66 @@ data _∈_ : Var × Type → Ctx → Set where
 
 Si el par $(x,\theta)$ pertenece a $\pi$ es porque o bien está en la cabeza o bien está en la cola
 y esto expresan ambos constructores.
-\medskip
 
-Observemos que este tipo de dato que acabamos de definir debería ser opuesto al que expresa que una variable
-no pertenece a un contexto, que definimos previamente.
-Es decir,  $x ∉ \pi$ si y solo si no existe $\theta$ tal que $(v , θ) ∈ π$. 
+En la definición del caso \verb|inTail| vemos que sólo se pide que el par se encuentra en la cola
+de un contexto. Uno podría preguntarse ¿qué pasa si el par también ocurre en la cabeza? Es decir, 
+¿por qué razón no pedimos también en la definición de \verb|inTail| que la variable \verb|x| sea
+distinta de \verb|y|?.
+Por la manera en que definimos el tipo de los contextos sabemos que eso no puede pasar, ya que si un par
+está en la cabeza de un contexto, tenemos una prueba de que no puede estar en la cola.
 
-Dados una variable $v$ y un contexto $\pi$ podemos definir entonces un isomorfismo entre los tipos
-$v ∉ \pi$ y $¬ (∃ (λ θ → (v , θ) ∈ π))$.
+Observemos también que hemos definido separadamente dos tipos cuyo significado está muy relacionado:
+el tipo \verb|_∉_| y el tipo \verb|_∈_|, de hecho deberían ser uno opuesto al otro. Esto es algo que queremos
+que suceda pero no tenemos explícitamente nada definido que lo asegure. Podemos definir entonces
+una propiedad que exprese esta relación: Una variable $v$ no pertenece a un contexto $\pi$ si y solo si
+no existe un tipo $\theta$ tal que $(v,\theta)$ pertenezca a $\pi$.
 
-En uno de los lados del isomorfismo tenemos que obtener un elemento
-de $¬ (∃ (λ θ → (v , θ) ∈ π))$ a partir de uno de $v ∉ π$. Esto es lo mismo
-que obtener $\bot$ a partir de $v ∉ π$ y de un par $(\theta,p)$ (donde $\theta$ es algún tipo
-y $p$ algún elemento de $(v,\theta)\in\pi$).
+Queremos definir entonces dos funciones que expresan estas dos implicaciones. La primera, a la que llamamos
+\verb|∉↝| obtiene un elemento del tipo \verb|¬ (∃ (λ θ →| \\ \verb|(v , θ) ∈ π))| a partir de uno de 
+\verb|v ∉ π|. 
+
+Recordemos que dado un tipo $A$, el tipo $\neg A$ es igual a $A \rightarrow \bot$, es decir
+el tipo de las funciones que toman un elemento de $A$ y retornan algo en $\bot$, que es el tipo
+vacío. El tipo de retorno de nuestra función será entonces una función que tome un par $(\theta,p)$
+(donde $p$ es una prueba de que el par $(v,\theta)$ no pertenece al contexto $\pi$)
+y retorne un absurdo.
+
 
 \begin{code}
+
 ∉↝ : ∀ {v} {π} → v ∉ π → ¬ (∃ (λ θ → (v , θ) ∈ π))
 ∉↝ {π = ø} ∉ø (_ , ())
 ∉↝ {v} {(v' , θ') ▷ π' ｢ v'∉π' ｣} 
    (∉¬ø v∉π' v≠v') (θ , inHead v=v' _) = v≠v' v=v'
 ∉↝ {v} {(v' , θ') ▷ π' ｢ v'∉π' ｣} 
    (∉¬ø v∉π' v≠v') (θ , inTail v∈π')   = (∉↝ v∉π') (θ , v∈π')
+
 \end{code}
-   
-En la definición realizamos pattern matching sobre $v ∉ π$ y sobre
-$∃ (λ θ → (v , θ) ∈ π)$.
 
-El primero de los casos es cuando tenemos que $v$ no ocurre en $\pi$
-porque éste es vacío, es decir, tenemos el constructor $∉ø$. Esto
+En la definición realizamos pattern matching sobre \verb|v ∉ π| y sobre
+\verb|∃ (λ θ →|\\ \verb|(v , θ) ∈ π)|.
+
+El primero de los casos es cuando tenemos que \verb|v| no ocurre en \verb|π|
+porque éste es vacío, es decir, tenemos el constructor \verb|∉ø|. Esto
 nos deja un pattern absurdo para el segundo parámetro de la función ya
-que no podemos construir un elemento de $(v , θ) ∈ ø$.
+que no podemos construir un elemento de \verb|(v , θ) ∈ ø|.
 
-El siguiente caso a contemplar es cuando $v$ no está en el contexto $\pi = ( v'  , θ' ) ▷ π' ｢ v'∉π' ｣$,
+El siguiente caso a contemplar es cuando \verb|v| no está en el contexto \verb|π = |\\ \verb|( v'  , θ' ) ▷ π' ｢ v'∉π' ｣|,
 representado por el constructor \verb|∉¬ø|. Observemos que para definir este caso de pattern matching
-tendremos un elemento de $\neg (v \equiv v')$ y uno de $v ∉ \pi'$.
+tendremos un elemento de \verb|¬ (v ≡ v')| y uno de \verb|v ∉ π'|.
 
-Dentro de este caso tenemos dos opciones: $(v , θ) ∈ π$ para algún $\theta$ porque el par
-se encuentra en la cabeza de $\pi$, o porque se encuentra en la cola, y esto está expresado en los dos
+Dentro de este caso tenemos dos opciones: \verb|(v , θ) ∈ π| para algún \verb|θ| porque el par
+se encuentra en la cabeza de \verb|π|, o porque se encuentra en la cola, y esto está expresado en los dos
 casos de pattern matching. En el primero de ellos observemos que tenemos un elemento de
-$v \equiv v'$, por lo cual podremos obtener $\bot$ ya que teníamos también que $\neg (v \equiv v')$.
+\verb|v ≡ v'|, por lo cual podremos obtener $\bot$ ya que teníamos también \verb|¬ (v ≡ v')|.
 
-En el último caso el constructor \verb|inTail| contiene un elemento de $v \in \pi'$ pero también teníamos
-uno de $v ∉ \pi'$ por lo que podremos obtener $\bot$ utilizando una llamada recursiva.
+En el último caso el constructor \verb|inTail| contiene un elemento de \verb|(v , θ) ∈ π'| pero también teníamos
+uno de \verb|v ∉ π'| por lo que podremos obtener $\bot$ utilizando una llamada recursiva.
 \medskip
 
-En el otro lado del isomorfismo tenemos que obtener un elemento
-de $v ∉ π$ a partir de $¬ (∃ (λ θ → (v , θ) ∈ π))$. Es decir, dado que tenemos
-una función que obtiene $\bot$ a partir de un par $(\theta,p)$ (donde $p$ es un elemento
-de $(v , θ) ∈ π$), tendremos que obtener uno de $v ∉ π$:
+La otra implicación que queremos definir es que si no existe un tipo $\theta$ tal que
+el par $(v,\theta)$ pertenece al contexto $\pi$, entonces $v$ no pertenece a $\pi$. Definimos una función
+que llamamos \verb|∉↜| para expresar esto:
 
 \begin{code}
    
@@ -1487,24 +1501,40 @@ de $(v , θ) ∈ π$), tendremos que obtener uno de $v ∉ π$:
     g t↑ v=v' = t↑ (θ' , inHead v=v' refl)
 \end{code}
 
-Aquí podemos hacer pattern matching en el parámetro implícito $\pi$. Si es vacío
+Aquí podemos hacer pattern matching en el parámetro implícito \verb|π|. Si es vacío
 entonces no tenemos otra opción para el valor de retorno que \verb|∉ø|.
 
-Si $\pi = (v' , θ') ▷ π' ｢ p ｣$ entonces el valor de retorno los construimos con 
-\verb|∉¬ø|. Para ello necesitamos dos elementos: uno de tipo $v ∉ π'$ y otro de $¬ (v ≡ v')$.
-Observemos que con lo único que contamos es con una función $t↑$ que dado un elemento de
-$(∃ (λ θ → (v , θ) ∈ π))$ retorna $\bot$. 
+Si \verb|π = (v' , θ') ▷ π' ｢ p ｣| entonces el valor de retorno necesariamente tendremos que
+construirlo con \verb|∉¬ø|. 
+Para ello necesitamos dos elementos: uno de tipo \verb|v ∉ π'| y otro de \verb|¬ (v ≡ v')|.
+Observemos que con lo único que contamos es con una función \verb|t↑| que dado un elemento de
+\verb|(∃ (λ θ → (v , θ) ∈ π))| retorna $\bot$. 
 
-Si tenemos que no existe $\theta$ tal que $(v , θ) ∈ (v' , θ') ▷ π' ｢ p ｣$ entonces 
-tampoco existe $\theta$ tal que $(v , θ) ∈ π'$. Podemos construir una función $f$ que exprese
-esto: Dado un elemento de $¬(∃ (λ θ → (v , θ) ∈ π))$ obtiene uno de $¬(∃ (λ θ → (v , θ) ∈ π'))$ 
-Luego aplicando $∉↜$ a $(f \,t↑)$ obtenemos el elemento de $v ∉ π'$ que necesitamos.
+Pensemos un poco lo que expresan estos tipos. Contamos con un elemento \verb|t↑| que expresa
+que no existe un tipo \verb|θ| tal que el par \verb|(v,θ)| pertenece al contexto \verb|π|. Pero
+si no pertenece a \verb|π|, luego tampoco pertenece a \verb|π'| (puesto que el primero lo contiene).
+Podemos definir entonces una función \verb|f| que exprese eso: A partir de un elemento de
+\verb|¬(∃ (λ θ → (v , θ) ∈ π))| obtiene uno de \verb|¬(∃ (λ θ → (v , θ) ∈ π'))|.
 
-Por otro lado, como no existe $\theta$ tal que $(v , θ) ∈ (v' , θ') ▷ π' ｢ p ｣$, entonces
-necesariamente $v$ debe ser distinto a $v'$ (pues de lo contrario podríamos tomar $θ = θ'$).
-Construimos entonces una función $g$ que obtiene un elemento de $¬ (v ≡ v')$ y podemos completar
+Luego haciendo una llamada recursiva obtenemos el elemento de \verb|v ∉ π'| que necesitamos.
+
+Por otro lado, el contexto \verb|π| tiene a la variable \verb|v'| en su cabeza, por lo tanto si
+no existe un \verb|θ| tal que \verb|(v,θ)| está en \verb|π|, luego necesariamente \verb|v| debe ser
+distinta a \verb|v'|. La función \verb|g| obtiene un elemento de \verb|¬ (v ≡ v')| y completamos
 la definición.
 \medskip
+
+
+Teniendo este tipo, podemos definir la propiedad de que a partir de un contexto
+$\pi$ y una variable $v$, se puede decidir si existe un tipo $\theta$ tal que
+el par $(v,\theta)$ está en el contexto $\pi$:
+
+Como vimos en la sección anterior, un par dependiente puede interpretarse como el equivalente
+al cuantificador existencial de la lógica de predicados. Para dar un elemento del tipo 
+existencial, tenemos que dar un par, donde el segundo elemento puede depender del primero.
+
+La definición de esta función la hacemos por pattern matching en el contexto $\pi$.
+
 
 \subsubsection{Propiedades de los contextos de tipado}
 
@@ -1627,24 +1657,21 @@ uniqueType {θ = θ} {θ' = θ'}
 \subsection{Inferencia de tipos}
 
 \begin{code}
--- En esta función probamos que si no existe θ' tal que (v,θ') ∈ π y
--- v≠w, entonces no existe θ' tal que (v,θ') ∈ ((w , θ) ▷ π)
-aux'' : (π : Ctx) → (v : Var) → (w : Var) → (θ : Type) → ¬ (v ≡ w) →
-        (w∉π : w ∉ π) →  (p : ¬ (∃ (λ θ → (v , θ) ∈ π))) → 
-        ¬ (∃ (λ θ' → (v , θ') ∈ ((w , θ) ▷ π ｢ w∉π ｣)))
--- v≠w es una función que toma un elemento de (v ≡ w) y retorna ⊥
-aux'' π v w θ v≠w w∉π p (θ' , inHead v=w q) = v≠w v=w
-aux'' π v w θ v≠w w∉π p (θ' , inTail v∈π) = p (θ' , v∈π)
 
+∈absurd : ∀ {π} {v} {w} {θ} {w∉π} → ¬ (v ≡ w) → 
+          ¬ (∃ (λ θ → (v , θ) ∈ π)) → 
+          ¬ (∃ (λ θ' → (v , θ') ∈ ((w , θ) ▷ π ｢ w∉π ｣)))
+∈absurd v≠w p (θ' , inHead v=w _) = v≠w v=w
+∈absurd v≠w p (θ' , inTail v∈π)   = p (θ' , v∈π)
 
 -- Dado un contexto π y una variable v decidimos si existe un tipo θ
 -- tal que (v , θ) ∈ π.
 v∈π? : (v : Var) → (π : Ctx) → Dec (∃ (λ θ → (v , θ) ∈ π))
 v∈π? v ø = no (λ {(θ , ())})
-v∈π?  v ( (w , θ) ▷ π ｢ w∉π ｣) with v ≟ w | v∈π? v π
-... | yes p | _ = yes (θ , inHead p refl)
-... | no _  | yes (θ' , v,θ'∈π) = yes (θ' , inTail v,θ'∈π)
-... | no v≠w  | no pru = no (aux'' π v w θ v≠w w∉π pru)
+v∈π?  v ( (w , θ) ▷ π' ｢ w∉π' ｣) with v ≟ w | v∈π? v π'
+... | yes p   | _ = yes (θ , inHead p refl)
+... | no _    | yes (θ' , v,θ'∈π') = yes (θ' , inTail v,θ'∈π')
+... | no v≠w  | no p = no (∈absurd v≠w p)
 
 
 inferVar : (π : Ctx) → (v : Var) → Dec (∃ (λ θ → π ⊢ ″ v ″ ∷ θ))

@@ -211,25 +211,25 @@ La teoría de tipos es una teoría fundacional de la matemática, alternativa a 
 Difiere de esta última en algunos aspectos importantes:
 
 \begin{itemize}
-  \item En la teoría de conjuntos podemos identificar dos "capas": El sistema deductivo de la lógica de primer orden
+  \item En la teoría de conjuntos podemos identificar dos ``capas'': El sistema deductivo de la lógica de primer orden
         y, dentro de este sistema, los axiomas de una teoría particular como la de Zermelo-Fraenkel.
         
         En la teoría de tipos no tenemos esta distinción, la teoría \textbf{es} su propio sistema deductivo. En 
-        lugar de tener dos nociones como "conjuntos" y "proposiciones", tiene solo una: los \textbf{tipos}.
+        lugar de tener dos nociones como ``conjuntos'' y ``proposiciones'', tiene solo una: los \textbf{tipos}.
         
   \item En el sistema deductivo de la teoría de conjuntos tenemos un solo tipo de juicios: Una proposición tiene una prueba. Las
-        reglas para construir estos juicios son del estilo "A partir de $A$ y $B$ se infiere $A \wedge B$". Un juicio (
-        "$A$ tiene una prueba") existe a un nivel distinto al de una proposición en sí misma ($A$).
+        reglas para construir estos juicios son del estilo ``A partir de $A$ y $B$ se infiere $A \wedge B$''. Un juicio
+        (``$A$ tiene una prueba'') existe a un nivel distinto al de una proposición en sí misma ($A$).
         
-        En teoría de tipos el análogo a "$A$ tiene una prueba" es "$a\,:\,A$" ($a$ tiene tipo $A$). Si consideramos que el tipo
+        En teoría de tipos el análogo a ``$A$ tiene una prueba'' es ``$a\,:\,A$'' ($a$ tiene tipo $A$). Si consideramos que el tipo
         $A$ representa una proposición, luego $a$ es la prueba que hace a la proposición $A$ cierta. De esta forma
         la teoría de tipos es un sistema \textbf{constructivista}, ya que para probar la validez de una propiedad se debe
         encontrar el testigo que la hace cierta.
         
-  \item Si bien un juicio de tipado "$a\,:\,A$" puede interpretarse como que $a$ es la prueba de cierta proposición $A$, también
-        puede ser considerado como el análogo a "$a \in A$" de la teoría de conjuntos, es decir, considerar al tipo $A$ como un conjunto
-        de elementos. Sin embargo hay una diferencia escencial en el hecho de que "$a\,:\,A$" es un juicio, mientras que "$a \in A$"
-        es una proposición. En particular, en la teoría de tipos no podemos construir proposiciones del tipo "si $a\,:\,A$ luego ..."
+  \item Si bien un juicio de tipado ``$a\,:\,A$'' puede interpretarse como que $a$ es la prueba de cierta proposición $A$, también
+        puede ser considerado como el análogo a ``$a \in A$'' de la teoría de conjuntos, es decir, considerar al tipo $A$ como un conjunto
+        de elementos. Sin embargo hay una diferencia esencial en el hecho de que ``$a\,:\,A$'' es un juicio, mientras que ``$a \in A$''
+        es una proposición. En particular, en la teoría de tipos no podemos construir proposiciones del tipo ``si $a\,:\,A$ luego ...''
         La existencia de $a$ sólo puede considerarse dentro de un tipo, y no por sí solo, ya que cada elemento por su propia naturaleza
         debe tener un tipo. En cambio en la teoría de conjuntos esto no es así.
         
@@ -240,7 +240,7 @@ Difiere de esta última en algunos aspectos importantes:
         
         Sin embargo en la teoría de tipos también tenemos otro tipo de igualdad, la igualdad por definición (o judgmental equality), la cual
         existe al mismo nivel que un juicio de tipado. Si definimos una función $f\,:\,\mathds{N} \rightarrow \mathds{N}$ mediante
-        la ecuación $f(x)\,=\,x^2$, luego la expresión $f\,3$ es igual a $3^2$ \textbf{por definición}. Esta igualdad es algorítmicamente
+        la ecuación $f(x)\,=\,x^2$, luego la expresión $f(3)$ es igual a $3^2$ \textbf{por definición}. Esta igualdad es algorítmicamente
         decidible y el chequeo es parte de la meta-teoría.
         
 \end{itemize}
@@ -250,7 +250,7 @@ Difiere de esta última en algunos aspectos importantes:
 Dados dos tipos $A$ y $B$ se puede construir un tipo $A \rightarrow B$ que representa funciones con dominio
 en $A$ y codominio en $B$. Las funciones son un concepto primitivo en la teoría de tipos.
 
-Dada un elemento $\tjud{f}{A \rightarrow B}$ y un $\tjud{a}{A}$, luego se puede \textit{aplicar} la función
+Dada una función $\tjud{f}{A \rightarrow B}$ y un elemento $\tjud{a}{A}$, luego se puede \textit{aplicar} la función
 $f$ a $a$, lo cual notamos con $f\,a$ y cuyo tipo es $\tjud{f\,a}{B}$.
 
 Para construir elementos de un tipo funcional $A \rightarrow B$ se puede realizar una definición o utilizar la abstracción lambda. La
@@ -262,7 +262,7 @@ definición
 donde $x$ es una variable y $\Phi$ una expresión que puede contener a $x$, es válida si se chequea que $\tjud{\Phi}{B}$ 
 asumiendo $\tjud{x}{A}$.
 
-La misma definición mediante la abstacción lambda sería:
+La misma definición mediante la abstracción lambda sería:
 \begin{align*}
   \lambda\,(\tjud{x}{A}).\Phi
 \end{align*}
@@ -381,7 +381,7 @@ $\tjud{(a,b)}{\cprod{A}{B}}$.
 \medskip
 
 De la misma forma que generalizamos el tipo de las funciones, podemos generalizar el de los pares, teniendo que el tipo
-del segundo componente del par, \textit{dependa} del tipo del primero.
+del segundo componente del par, \textit{dependa} del primer componente.
 \smallskip
 
 \textbf{Regla de formación:} Dados un tipo $\tjud{A}{U}$ y una familia $\tjud{B}{A \rightarrow U}$ definimos el tipo de pares dependientes
@@ -437,7 +437,7 @@ definir una función $f$ que a partir de un elemento del coproducto $A + B$ obte
 \textbf{Constructores:} Puesto que no hay ningún elemento que tenga tipo $\mathbf{0}$, no tenemos constructores.
 \smallskip
 
-\textbf{Eliminadores y regla de computación:} Mediante un elminador podemos obtener un elemento de algún tipo $C$ a partir
+\textbf{Eliminadores y regla de computación:} Mediante un eliminador podemos obtener un elemento de algún tipo $C$ a partir
 de los constructores del tipo que se está definiendo. Observemos que como no tenemos constructores podemos pensar que
 cualquier elemento puede obtenerse a partir del tipo vacío. Tenemos entonces un eliminador del tipo vacío que es una función
 que no toma argumentos y construye un elemento de cualquier tipo.
@@ -460,9 +460,9 @@ del tipo $\mathbf{1}$ será una función $\tjud{g}{C \rightarrow \mathbf{1} \rig
 
 Cuando revisamos las diferencias entre la teoría de conjuntos y la teoría de tipos, vimos que podemos tener una analogía entre
 las proposiciones lógicas y los tipos. Si un tipo representa una proposición, la misma será válida si se encuentra un elemento
-del tipo. Tenemos entonces una corresponencia entre la lógica constructivista y un lenguaje de programación con tipos de datos
+del tipo. Tenemos entonces una correspondencia entre la lógica constructivista y un lenguaje de programación con tipos de datos
 con las características que vimos previamente. Esta correspondencia fue observada por primera vez por Haskell Curry y William
-Howard y se la conoce como \textbf{"isomorfismo de Curry-Howard"}.
+Howard y se la conoce como \textbf{``isomorfismo de Curry-Howard''}.
 
 Si observamos las reglas de la lógica proposicional podemos ver que las reglas de formación,
 de introducción y eliminación de los conectivos lógicos se corresponden con tipos. Por ejemplo
@@ -502,7 +502,7 @@ Se pretende que la sección sea autocontenida, salvo algunas
 menciones a la sección anterior, y por lo tanto una introducción para quien
 se esté iniciando en la programación en Agda. Por otro lado, si el lector
 conoce conceptos como; tipos de datos, pattern matching, funciones dependientes,
-familias de tipos de datos, sentencia \verb|with|, argumentos implicitos,
+familias de tipos de datos, sentencia \verb|with|, argumentos implícitos,
 dotted patterns, etc. Una opción puede ser dirigirse directo a la sección
 siguiente.
 
@@ -516,7 +516,7 @@ En lenguajes como Haskell existe una división bien marcada entre los tipos
 {\verb|True|, {\verb|"Haskell"|, etc). En cambio en lenguajes con
 tipos dependientes, como Agda, esta separación es menos clara. 
 
-Para ejemplificar ésto consideremos los clásicos vectores de algún tipo
+Para ejemplificar esto consideremos los clásicos vectores de algún tipo
 con tamaño fijo. Podemos pensar en la siguiente implementación en
 Haskell,
 
@@ -607,7 +607,7 @@ Teniendo en cuenta la exigencia de terminación que impone Agda, notar que
 el segundo caso de pattern matching es válido ya que el primer argumento de
 la suma se vuelve más chico.
 
-\subsection{Funciones dependientes y argumentos implicitos}
+\subsection{Funciones dependientes y argumentos implícitos}
 
 Hasta acá repasamos como escribir tipos de datos y funciones de Haskell, en Agda.
 Introducimos ahora las funciones dependientes, como funciones en las que en su signatura
@@ -629,9 +629,9 @@ Esta función toma un tipo \verb|A| y retorna la función identidad para ese tip
 Ahora bien, la implementación de la función identidad que dimos toma como primer
 argumento un tipo con el fin de modelar el polimorfismo de tipos, pero ahora sucede
 que para utilizar la función \verb|id| tenemos que suministrarle el tipo y la idea
-de las funciones polimorficas es evitar esto, dejando que el tipo sea inferido por
-el chequeador de tipos. Este problema se soluciona utilizando argumentos implicitos
-los cuales se escriben encerrandolos entre llaves. Siguiendo con el ejemplo ahora
+de las funciones polimórficas es evitar esto, dejando que el tipo sea inferido por
+el chequeador de tipos. Este problema se soluciona utilizando argumentos implícitos
+los cuales se escriben encerrándolos entre llaves. Siguiendo con el ejemplo ahora
 podemos implementar la función identidad de la siguiente manera
 
 \begin{verbatim}
@@ -640,10 +640,10 @@ id : {A : Set} → A → A
 id = λ x → x
 \end{verbatim}
 
-La declaración de los argumentos como implicitos nos exime de tener que pasarlos al
+La declaración de los argumentos como implícitos nos exime de tener que pasarlos al
 llamar a la función, pero existe la posibilidad de pasarlos si es que hiciera
 falta o usarlos como un argumento normal en la declaración. La manera de usar a estos
-argumentos implicitos es mediante llaves como cualquier otro argumento o además de las
+argumentos implícitos es mediante llaves como cualquier otro argumento o además de las
 llaves utilizando el nombre de la variable escrita en el tipo de la función
 
 \begin{verbatim}
@@ -654,13 +654,13 @@ map {B = B} f (x ∷ xs) = f x ∷ map f xs
 
 \end{verbatim}
 
-En este ejemplo se puede ver que para el caso de pattern matching en la lista vacia estamos usando
-ambos argumentos implicitos utilizando el orden en el que aparecen en el tipo
+En este ejemplo se puede ver que para el caso de pattern matching en la lista vacía estamos usando
+ambos argumentos implícitos utilizando el orden en el que aparecen en el tipo
 de nuestra función. Otra posibilidad es, como mencionamos antes, utilizar
 el nombre de la variable del tipo, por ejemplo en el caso en que la lista tiene
 al menos un elemento podemos utilizar el nombre de variable \verb|B|,
 de manera de evitar tener que utilizar el orden y como consecuencia tener
-que mencionar todos los argumentos implicitos (previos) para referencia al argumento deseado.
+que mencionar todos los argumentos implícitos (previos) para referencia al argumento deseado.
 
 \begin{verbatim}
 
@@ -672,7 +672,7 @@ mapToNat = map {B = Nat}
 
 \end{verbatim}
 
-Como antes, para pasar argumentos implicitos a una función podemos de nuevo
+Como antes, para pasar argumentos implícitos a una función podemos de nuevo
 utilizar el orden que determina el tipo de la función y el nombre de la variable
 en el tipo. Así entonces, en \verb|mapFromNat| estamos fijando el tipo \verb|A|
 y en \verb|mapToNat| estamos fijando el tipo \verb|B|.
@@ -772,9 +772,9 @@ un único valor para un argumento, este debe estar prefijado por el punto}.
 \subsubsection{Pattern con with}
 Introduzcamos ahora la sentencia \verb|with| que nos permite agregar mas
 argumentos a la función y realizar pattern matching de la forma usual, teniendo
-en cuenta la condición de exhaustividad. Asi por ejemplo
+en cuenta la condición de exhaustividad. Así por ejemplo
 esto nos permite combinar dos o mas argumentos y hacer pattern matching sobre su
-resultado. La siguiente siguiente función de ejemplo retona la cantidad de elementos
+resultado. La siguiente siguiente función de ejemplo retorna la cantidad de elementos
 que cumplen una cierta propiedad sobre un vector.
 
 \begin{verbatim}
@@ -832,7 +832,7 @@ m < n = suc m ≤ n
 \end{verbatim}
 
 podemos analizar el ejemplo de la función \verb|head|, el pattern
-absurdo es ocacionado por \verb|head []| cuyo tipo, reemplazando valores,
+absurdo es ocasionado por \verb|head []| cuyo tipo, reemplazando valores,
 será \verb|head [] : zero < zero → a|. Donde es claro notar que es imposible
 construir un valor para el tipo \verb|zero < zero| o \verb|suc zero ≤ zero|
 \footnote{Usamos \verb|zero| y \verb|suc zero| para evidenciar de forma mas clara
@@ -849,7 +849,7 @@ preocuparnos por dar una definición de función para ese caso.
 Al comienzo de la sección anterior se menciona que, considerando a un tipo
 \verb|A| como una proposición podemos decir que esta proposición es
 cierta si podemos construir un valor \verb|a| que tenga tipo \verb|A|. Además
-vale recordar que esto hace que teoría de tipos sea un sistema contructivista.
+vale recordar que esto hace que teoría de tipos sea un sistema constructivista.
 
 Podemos pensar entonces como será la implementación de la proposición \verb|False| (\verb|⊥|) 
 como tipo de dato, la idea es que nunca podamos construirnos un valor de este tipo y
@@ -977,7 +977,7 @@ data IsEven : Nat → Set where
 
 Veamos algunos ejemplos para entender este tipo de dato, podemos
 empezar probando que el \verb|0|\footnote{En general usaremos las versiones
-sintacticamente azucaradas, salvo cuando haga falta mencionar su
+sintácticamente azucaradas, salvo cuando haga falta mencionar su
 construcción original} es par escribiendo una función con tipo
 \verb|IsEven zero|, donde la prueba es utilizar el constructor
 \verb|pz| directamente
@@ -1025,7 +1025,7 @@ Usar \verb|pz| es imposible, pero podemos utilizar \verb|psuc|, luego necesitamo
 construirnos un valor de tipo \verb|IsEven (suc zero)|; pero acá no podemos usar
 \verb|pz|, ni \verb|psuc|.
 
-Esta forma de pensar la manera de contruir los valores o pruebas nos induce una
+Esta forma de pensar la manera de construir los valores o pruebas nos induce una
 noción inductiva, ¿será posible entonces implementar una función que dado un
 natural nos construya una prueba, si es que puede, de que este natural es par?; La
 respuesta es sí y para esto podemos hacer uso del tipo \verb|Dec|. Con el cual
@@ -1092,7 +1092,7 @@ isEven (suc (suc n)) with isEven n
 bien, usando \verb|with| podemos preguntarnos si \verb|n| es par o no. En caso de serlo
 es interesante notar que el tipo de la prueba es \verb|even : IsEven n|, donde nosotros
 necesitamos construir algo de tipo \verb|IsEven (suc (suc n))|. Por lo tanto usando \verb|psuc|
-y \verb|even| nos construimos algo del tipo buscado y con \verb|yes| terminamos de contruir
+y \verb|even| nos construimos algo del tipo buscado y con \verb|yes| terminamos de construir
 la prueba de tipo \verb|Dec (IsEven (suc (suc n)))|. Ahora bien, ¿que tipo tiene la prueba que
 necesitamos construir para el caso en el que \verb|n| no es par?; necesitamos una prueba de tipo
 \verb|¬ IsEven (suc (suc n))| y tenemos además una prueba de que \verb|¬even : ¬ IsEven n|.

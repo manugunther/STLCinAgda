@@ -1552,25 +1552,25 @@ Podemos definir otras propiedades interesantes sobre los contextos de tipado, qu
         la varible $v$ no pertenece a $π₀$, entonces $v$ no pertenece a $π₁$:
     
 \begin{code}
-change∉ : ∀ {v} {π₀} {π₁} → π₀ ≈ π₁ → v ∉ π₀ → v ∉ π₁
-change∉ emptyCtxEq notInEmpty = notInEmpty
-change∉ {v} {t ▷ π₀ ｢ p ｣} {.t ▷ π₁ ｢ p' ｣} 
+substCtx∉ : ∀ {v} {π₀} {π₁} → π₀ ≈ π₁ → v ∉ π₀ → v ∉ π₁
+substCtx∉ emptyCtxEq notInEmpty = notInEmpty
+substCtx∉ {v} {t ▷ π₀ ｢ p ｣} {.t ▷ π₁ ｢ p' ｣} 
             (ctxEq e) (∉¬ø p₀ x=x') = 
-              ∉¬ø (change∉ e p₀) x=x'
+              ∉¬ø (substCtx∉ e p₀) x=x'
 \end{code}
 
   \item Si dos contextos $π₀$ y $π₁$ son equivalentes, los tipos $θ₀$ y $θ₁$ son iguales
         y el par $(x , θ₀)$ pertenece a $π₀$, entonces el par $(x , θ₁)$ pertenece a $π₁$:
   
 \begin{code}
-changeCtxVar : ∀ {x} {π₀} {π₁} {θ₀} {θ₁} → 
+substCtx∈ : ∀ {x} {π₀} {π₁} {θ₀} {θ₁} → 
                π₀ ≈ π₁ → θ₀ ≡ θ₁ → (x , θ₀) ∈ π₀ → (x , θ₁) ∈ π₁
-changeCtxVar emptyCtxEq refl x∈π₀ = x∈π₀
-changeCtxVar {x} {(x' , θ') ▷ π₀' ｢ p ｣} {(.x' , .θ') ▷ π₁' ｢ p' ｣}
+substCtx∈ emptyCtxEq refl x∈π₀ = x∈π₀
+substCtx∈ {x} {(x' , θ') ▷ π₀' ｢ p ｣} {(.x' , .θ') ▷ π₁' ｢ p' ｣}
              (ctxEq π₀'≈π₁') refl (inHead x≡x' θ₀≡θ') = inHead x≡x' θ₀≡θ'
-changeCtxVar {x} {(x' , θ') ▷ π₀' ｢ p ｣} {(.x' , .θ') ▷ π₁' ｢ p' ｣} 
+substCtx∈ {x} {(x' , θ') ▷ π₀' ｢ p ｣} {(.x' , .θ') ▷ π₁' ｢ p' ｣} 
              (ctxEq π₀'≈π₁') refl (inTail x∈π₀') = 
-                           inTail (changeCtxVar π₀'≈π₁' refl x∈π₀' )
+                           inTail (substCtx∈ π₀'≈π₁' refl x∈π₀' )
 \end{code}
 
   \item Si los pares $(x , θ)$ y $(x , θ')$ pertenecen al contexto $π$, entonces
@@ -1591,6 +1591,20 @@ uniqueTypeVar {(a  , θₐ) ▷ π' ｢ a∉π' ｣} {x} {θ} {θ'}
 uniqueTypeVar {(a  , θₐ) ▷ π' ｢ a∉π' ｣} {x} {θ} {θ'}
               (inTail x,θ∈π') 
               (inTail x,θ'∈π') = uniqueTypeVar x,θ∈π' x,θ'∈π'
+\end{code}
+
+  \item Una última propiedad que queremos definir es que la pertenencia de una variable
+        en un contexto es decidible, es decir dada una variable $v$ y un contexto $\pi$
+        es decidible si existe un tipo $\theta$ tal que el par $(v,\theta)$ pertenece
+        a $\pi$:
+        
+\begin{code}
+v∈π? : (v : Var) → (π : Ctx) → Dec (∃ (λ θ → (v , θ) ∈ π))
+v∈π? v ø = no (λ {(θ , ())})
+v∈π?  v ( (w , θ) ▷ π' ｢ w∉π' ｣) with v ≟ w | v∈π? v π'
+... | yes p   | _ = yes (θ , inHead p refl)
+... | no _    | yes (θ' , v,θ'∈π') = yes (θ' , inTail v,θ'∈π')
+... | no v≠w  | no p = no (prop∈₂ v≠w p)
 \end{code}
 
 \end{itemize}
@@ -1634,53 +1648,79 @@ De la misma forma que definimos algunas propiedades interesantes de los contexto
 definir propiedades de los juicios. Observemos que si tenemos que dos contextos $π₀$ y $π₁$ son equivalentes
 (bajo la noción de equivalencia que definimos), y que dos tipos $θ$ y $θ'$ son iguales, luego a partir
 del juicio $π₀ ⊢ t ∷ θ$ podríamos obtener el juicio $π₁ ⊢ t ∷ θ'$. Esto lo expresamos en la función
-\verb|changeCtx|:
+\verb|substCtx|:
 
 \begin{code}
-changeCtx : ∀ {π₀} {π₁} {t} {θ} {θ'} → π₀ ≈ π₁ → θ ≡ θ' → π₀ ⊢ t ∷ θ → π₁ ⊢ t ∷ θ'
-changeCtx π₀≈π₁ refl (x∈π₀ ∣ᵥ) = changeCtxVar π₀≈π₁ refl x∈π₀ ∣ᵥ
-changeCtx {π₀} {π₁} {t = λ' v ∶ θᵥ ⟶ t₀} {θ = .θᵥ ⟼ θ}
+substCtx : ∀ {π₀} {π₁} {t} {θ} {θ'} → 
+           π₀ ≈ π₁ → θ ≡ θ' → π₀ ⊢ t ∷ θ → π₁ ⊢ t ∷ θ'
+substCtx π₀≈π₁ refl (x∈π₀ ∣ᵥ) = substCtx∈ π₀≈π₁ refl x∈π₀ ∣ᵥ
+substCtx {π₀} {π₁} {t = λ' v ∶ θᵥ ⟶ t₀} {θ = .θᵥ ⟼ θ}
           π₀≈π₁ refl (_∣ₗ {.t₀} {.v} {.θᵥ} {.θ} {.π₀} {x∉π₀} π₀⊢t∷θ) =
-          _∣ₗ {p = change∉ π₀≈π₁ x∉π₀} (changeCtx (ctxEq π₀≈π₁) refl π₀⊢t∷θ) 
-changeCtx π₀≈π₁ refl (π₀⊢t∷θ ∧ π₀⊢t∷θ₁ ∣ₐ) =
-        (changeCtx π₀≈π₁ refl π₀⊢t∷θ) ∧ (changeCtx π₀≈π₁ refl π₀⊢t∷θ₁ ) ∣ₐ
+          _∣ₗ {p = substCtx∉ π₀≈π₁ x∉π₀} (substCtx (ctxEq π₀≈π₁) refl π₀⊢t∷θ) 
+substCtx π₀≈π₁ refl (π₀⊢t∷θ ∧ π₀⊢t∷θ₁ ∣ₐ) =
+        (substCtx π₀≈π₁ refl π₀⊢t∷θ) ∧ (substCtx π₀≈π₁ refl π₀⊢t∷θ₁ ) ∣ₐ
 \end{code}
 
-
+También podemos dar una propiedad que expresa que si se puede tipar una expresión, 
+el tipo es único. A esta propiedad la llamamos \verb|uniqueType|:
 
 \begin{code}
--- Si un termino se puede tipar con θ y θ', estos son iguales
 uniqueType : ∀ {π} {t} {θ} {θ'} → π ⊢ t ∷ θ → π ⊢ t ∷ θ' → θ ≡ θ'
 uniqueType (x,θ∈π ∣ᵥ) (x,θ'∈π ∣ᵥ) = uniqueTypeVar x,θ∈π x,θ'∈π
 uniqueType (_∣ₗ {θ = θ} π⊢t∷θ) (_∣ₗ {θ = .θ} π⊢t∷θ') = 
-                cong (_⟼_ θ) $ uniqueType π⊢t∷θ $ changeCtx (ctxEq reflCtx) refl π⊢t∷θ'
+              cong (_⟼_ θ) $ uniqueType π⊢t∷θ $ substCtx (ctxEq reflCtx) refl π⊢t∷θ'
 uniqueType {θ = θ} {θ' = θ'} 
            (_∧_∣ₐ {θ' = .θ} π⊢t∷θ₁⟼θ₂ π⊢t∷θ₁)
            (_∧_∣ₐ π⊢t∷θ₁'⟼θ₂' π⊢t∷θ₁') = 
-                           proj₂ $ cong⟼⁻¹ (trans (uniqueType π⊢t∷θ₁⟼θ₂ π⊢t∷θ₁'⟼θ₂') 
-                                           (cong (λ θ → θ ⟼ θ') (sym (uniqueType π⊢t∷θ₁ π⊢t∷θ₁'))))
+                   proj₂ $ cong⟼⁻¹ (trans (uniqueType π⊢t∷θ₁⟼θ₂ π⊢t∷θ₁'⟼θ₂') 
+                           (cong (λ θ → θ ⟼ θ') (sym (uniqueType π⊢t∷θ₁ π⊢t∷θ₁')))) --$
 \end{code}
 
 \subsection{Inferencia de tipos}
 
+Con todo lo que hemos definido ahora podemos definir la inferencia de tipos. A partir 
+de un contexto de asignaciones y de un término del cálculo lambda queremos obtener
+si existe un tipo tal que se pueda construir juicio de tipado válido.
+
+Para implementar la función \verb|infer|, haremos pattern matching en el término. Dividimos
+entonces nuestra implementación de acuerdo a si tenemos una variable, una abstracción o una
+aplicación:
+
+\subsubsection{Variable}
+
+La regla para el juicio de tipado de una variable es la siguiente:
+
+\begin{center}
+\AxiomC{$(x,θ) ∈ π$}
+\UnaryInfC{$ π ⊢ x : θ$}
+\DisplayProof
+\end{center}
+
+Observemos que para poder concluir que la variable $x$ tiene tipo $θ$
+bajo el contexto $π$ necesitamos que el par $(x,θ)$ se encuentre en el contexto
+$π$. Podremos entonces inferir el tipo si esto se satisface: 
+
 \begin{code}
-
--- Dado un contexto π y una variable v decidimos si existe un tipo θ
--- tal que (v , θ) ∈ π.
-v∈π? : (v : Var) → (π : Ctx) → Dec (∃ (λ θ → (v , θ) ∈ π))
-v∈π? v ø = no (λ {(θ , ())})
-v∈π?  v ( (w , θ) ▷ π' ｢ w∉π' ｣) with v ≟ w | v∈π? v π'
-... | yes p   | _ = yes (θ , inHead p refl)
-... | no _    | yes (θ' , v,θ'∈π') = yes (θ' , inTail v,θ'∈π')
-... | no v≠w  | no p = no (prop∈₂ v≠w p)
-
 
 inferVar : (π : Ctx) → (v : Var) → Dec (∃ (λ θ → π ⊢ ″ v ″ ∷ θ))
 inferVar π v with v∈π? v π
 inferVar π v | yes (θ' , v∈π) = yes (θ' , v∈π ∣ᵥ)
--- Si v no está en π entonces tenemos una función
--- que dado un elemento de (v,θ') ∈ π retorna ⊥
-inferVar π v | no  v∉π = no (λ { (θ' , v∈π ∣ᵥ) → v∉π (θ' , v∈π) })
+inferVar π v | no  v∈π↑ = no (λ { (θ' , v∈π ∣ᵥ) → v∈π↑ (θ' , v∈π) })
+
+\end{code}
+
+Utilizamos la función \verb|v∈π?| que definimos previamente para decidir
+si la variable pertenece al contexto. Si es así obtendremos
+un par con el tipo que tiene la variable en el contexto y la prueba, y es justo
+lo que necesitamos para construir el juicio de tipado.
+
+En el caso en que la variable no pertenezca al contexto retornaremos que no se puede tipar
+el término, es decir construimos una función que dado un par con un tipo y un juicio 
+de tipado retorna $\bot$.
+
+\subsubsection{Abstracción lambda}
+
+\begin{code}
 
 inferL : {v : Var} {θ : Type} {π : Ctx} {t : LambdaTerm} 
           {p : v ∉ π} → 
@@ -1688,7 +1728,7 @@ inferL : {v : Var} {θ : Type} {π : Ctx} {t : LambdaTerm}
           ¬ (∃ (λ θ'' → π ⊢ λ' v ∶ θ ⟶ t ∷ θ''))
 inferL {v} {θ} {π} {t} {p} 
             t↑ (.θ ⟼ θ' , _∣ₗ {.t} {.v} {.θ} {.θ'} {.π} {p'} t∷θ' ) = 
-                   t↑ (θ' , changeCtx (ctxEq reflCtx) refl t∷θ') 
+                   t↑ (θ' , substCtx (ctxEq reflCtx) refl t∷θ') 
 inferL t↑ ( ⊙ , () )
 
 inferL2 : ∀ {v} {θᵥ} {θ} {π} {t} → (v , θ) ∈ π → ¬ (∃ (λ θ' → π ⊢ λ' v ∶ θᵥ ⟶ t ∷ θ'))
@@ -1706,7 +1746,7 @@ inferApp₁₂ {π} {t₁} {t₂} (⊙ , π⊢t₁∷⊙) π⊢t₂∷θ = no t�
     ... | yes ()
     ... | no ¬⊙≡θ⟼θ' = ¬⊙≡θ⟼θ' $ uniqueType π⊢t₁∷⊙ π⊢t₁∷θ⟼θ'
 inferApp₁₂ {π} {t₁} {t₂} (θ ⟼ θ' , π⊢t₁∷θ⟼θ') (θ'' , π⊢t₂∷θ'') with θ ≟ₜ θ''
-... | yes θ≡θ'' = yes (θ' , (π⊢t₁∷θ⟼θ' ∧ changeCtx reflCtx (sym θ≡θ'') π⊢t₂∷θ'' ∣ₐ))
+... | yes θ≡θ'' = yes (θ' , (π⊢t₁∷θ⟼θ' ∧ substCtx reflCtx (sym θ≡θ'') π⊢t₂∷θ'' ∣ₐ))
 ... | no ¬θ≡θ'' = no t₂Absurdo
   where 
     t₂Absurdo : ¬ ∃ (λ θ → π ⊢ (t₁ ● t₂) ∷ θ)

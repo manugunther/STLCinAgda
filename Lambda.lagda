@@ -1274,12 +1274,12 @@ open import Data.Empty
 open import Function
 \end{code}
 
-\agType{String}, para representar las variables de los términos. \agType{PropositionalEquality} tiene definido el tipo de la igualdad
-proposicional entre dos tipos, tal como lo explicamos en la sección 3. \agType{Nullary} para tener el tipo vacío $\bot$ y
-el tipo \agType{Dec}.
-\agType{Product} lo necesitamos para representar los pares (variable, tipo) en los contextos. \agType{Empty} tiene definido
+\verb|String|, para representar las variables de los términos. \verb|PropositionalEquality| tiene definido el tipo de la igualdad
+proposicional entre dos tipos, tal como lo explicamos en la sección 3. \verb|Nullary| para tener el tipo vacío $\bot$ y
+el tipo \verb|Dec|.
+\verb|Product| lo necesitamos para representar los pares (variable, tipo) en los contextos. \verb|Empty| tiene definido
 el eliminador de $\bot$, es decir, la función que dado $\bot$ retorna cualquier cosa. Por último
-\agType{Function} tiene definido el símbolo de aplicación $\$$, el cual es útil para evitar paréntesis excesivos.
+\verb|Function| tiene definido el símbolo de aplicación $\$$, el cual es útil para evitar paréntesis excesivos.
 
 \subsection{Tipos del Cálculo Lambda}
 
@@ -1360,7 +1360,7 @@ una misma variable ocurra dos veces. Esta restricción es muy importante y forma
 para definir contextos de tipado. Como veremos a continuación, esta restricción puede expresarse en
 un lenguaje como Agda.
 
-Definimos el tipo \agType{Ctx} junto con un tipo que dada una variable $x$ y un contexto $\pi$, expresa que 
+Definimos el tipo \verb|Ctx| junto con un tipo que dada una variable $x$ y un contexto $\pi$, expresa que 
 $x$ no ocurre en $\pi$:
 
 \begin{code}
@@ -1382,9 +1382,10 @@ $\pi$ al que se le agrega un par $(x,\theta)$ con una prueba de que $x$ no ocurr
 Si una variable $x$ no ocurre en un contexto $\pi$ es porque $\pi$ es vacío
 o porque $x$ no ocurre en la cola y es distinta a la variable de la cabeza de $\pi$. Esto
 expresan los constructores \verb|∉ø| y \verb|∉¬ø| respectivamente del tipo \verb|_∉_|.
-         
-Con esta definición podemos definir una relación de equivalencia entre dos
-contextos:
+
+\subsubsection{Equivalencia de contextos}
+
+Con la definición que tenemos de los contextos podemos definir una relación de equivalencia:
 
 \begin{code}
 data _≈_ : Ctx → Ctx → Set where
@@ -1411,9 +1412,11 @@ en el resto no sean exactamente las mismas (en la definción de \verb|ctxEq|, $p
 ser distinto de $p'$ pero ambos expresan que la variable no pertenece al resto del contexto).
 \medskip
 
+\subsubsection{Pertenencia a contextos}
+
 Para poder definir juicios de tipado necesitamos una noción más. Si pensamos en la regla
 para tipar una variable tenemos que una variable $x$ tiene tipo $\theta$ si el par $(x,\theta)$
-pertenece al contexto de tipado. Por lo tanto necesitamos definir cuándo un par pertenece
+pertenece al contexto de tipado. Por lo tanto necesitamos definir cuándo un par \textbf{pertenece}
 a un contexto:
 
 \begin{code}
@@ -1430,36 +1433,72 @@ y esto expresan ambos constructores.
 En la definición del caso \verb|inTail| vemos que sólo se pide que el par se encuentra en la cola
 de un contexto. Uno podría preguntarse ¿qué pasa si el par también ocurre en la cabeza? Es decir, 
 ¿por qué razón no pedimos también en la definición de \verb|inTail| que la variable \verb|x| sea
-distinta de \verb|y|?.
+distinta de \verb|y|?
 Por la manera en que definimos el tipo de los contextos sabemos que eso no puede pasar, ya que si un par
 está en la cabeza de un contexto, tenemos una prueba de que no puede estar en la cola.
 
 Observemos también que hemos definido separadamente dos tipos cuyo significado está muy relacionado:
 el tipo \verb|_∉_| y el tipo \verb|_∈_|, de hecho deberían ser uno opuesto al otro. Esto es algo que queremos
-que suceda pero no tenemos explícitamente nada definido que lo asegure. Podemos definir entonces
-una propiedad que exprese esta relación: Una variable $v$ no pertenece a un contexto $\pi$ si y solo si
+que suceda pero no tenemos explícitamente nada definido que lo asegure. Pensemos entonces cómo podemos
+expresar que una variable no pertenece a un contexto, sólo utilizando el tipo \verb|_∈_|. Recordemos
+el tipo para expresar negación: Dado un tipo $A$, el tipo $\neg A$ es igual a $A \rightarrow \bot$, es decir
+el tipo de las funciones que toman un elemento de $A$ y retornan algo en $\bot$, que es el tipo
+vacío.
+
+Si una variable $v$ no pertenece a un contexto $\pi$, esto quiere decir que ``no existe tipo $\theta$ tal que
+$(v,\theta)$ pertenece a $\pi$". Podemos escribir un tipo en Agda que represente exactamente esto:
+\verb|¬ (∃ (λ θ → (v , θ) ∈ π))| y definir algunas propiedades.
+
+\begin{itemize}
+  \item Si tenemos que no existe \verb|θ| tal que el par \verb|(v,θ)| no pertenece a un contexto
+        extendido \verb|(w , θ') ▷ π' ｢ p ｣|, podemos deducir que tampoco pertenece al contexto
+        \verb|π'| y que \verb|v| es distinto a \verb|w|:
+
+\begin{code}
+prop∈₁ : ∀ {v} {π} {v'} {θ'} {p} → 
+         ¬ (∃ (λ θ → (v , θ) ∈ ((v' , θ') ▷ π ｢ p ｣))) →
+         ¬ (∃ (λ θ → (v , θ) ∈ π)) × ¬ (v ≡ v')
+prop∈₁ {θ' = θ'} t↑ = (t↑ ∘ map id inTail , 
+                       λ v=v' → t↑ (θ' , inHead v=v' refl))
+\end{code}
+
+  \item Conversamente a lo anterior, si tenemos que no existe \verb|θ| tal que el par 
+        \verb|(v,θ)| no pertenece al contexto \verb|π| y además \verb|v| es distinto
+        a \verb|w| entonces tampoco pertenece al contexto extendido \verb|(w , θ') ▷ π' ｢ p ｣|:
+
+\begin{code}
+prop∈₂ : ∀ {π} {v} {w} {θ} {w∉π} → ¬ (v ≡ w) → 
+          ¬ (∃ (λ θ → (v , θ) ∈ π)) → 
+          ¬ (∃ (λ θ' → (v , θ') ∈ ((w , θ) ▷ π ｢ w∉π ｣)))
+prop∈₂ v≠w p (θ' , inHead v=w _) = v≠w v=w
+prop∈₂ v≠w p (θ' , inTail v∈π)   = p (θ' , v∈π)
+\end{code}
+
+% Dentro de este caso tenemos dos opciones: \verb|(v , θ) ∈ π| para algún \verb|θ| porque el par
+% se encuentra en la cabeza de \verb|π|, o porque se encuentra en la cola, y esto está expresado en los dos
+% casos de pattern matching. En el primero de ellos observemos que tenemos un elemento de
+% \verb|v ≡ v'|, por lo cual podremos obtener $\bot$ ya que teníamos también \verb|¬ (v ≡ v')|.
+% 
+% En el último caso el constructor \verb|inTail| contiene un elemento de \verb|(v , θ) ∈ π'| pero también teníamos
+% uno de \verb|v ∉ π'| por lo que podremos obtener $\bot$ utilizando una llamada recursiva.
+% \medskip        
+
+\end{itemize}
+
+Definamos entonces una propiedad que exprese lo siguiente: Una variable $v$ no pertenece a un contexto $\pi$ si y solo si
 no existe un tipo $\theta$ tal que $(v,\theta)$ pertenezca a $\pi$.
 
-Queremos definir entonces dos funciones que expresan estas dos implicaciones. La primera, a la que llamamos
+Queremos definir dos funciones que expresan estas implicaciones. La primera, a la que llamamos
 \verb|∉↝| obtiene un elemento del tipo \verb|¬ (∃ (λ θ →| \\ \verb|(v , θ) ∈ π))| a partir de uno de 
 \verb|v ∉ π|. 
-
-Recordemos que dado un tipo $A$, el tipo $\neg A$ es igual a $A \rightarrow \bot$, es decir
-el tipo de las funciones que toman un elemento de $A$ y retornan algo en $\bot$, que es el tipo
-vacío. El tipo de retorno de nuestra función será entonces una función que tome un par $(\theta,p)$
-(donde $p$ es una prueba de que el par $(v,\theta)$ no pertenece al contexto $\pi$)
-y retorne un absurdo.
-
 
 \begin{code}
 
 ∉↝ : ∀ {v} {π} → v ∉ π → ¬ (∃ (λ θ → (v , θ) ∈ π))
 ∉↝ {π = ø} ∉ø (_ , ())
 ∉↝ {v} {(v' , θ') ▷ π' ｢ v'∉π' ｣} 
-   (∉¬ø v∉π' v≠v') (θ , inHead v=v' _) = v≠v' v=v'
-∉↝ {v} {(v' , θ') ▷ π' ｢ v'∉π' ｣} 
-   (∉¬ø v∉π' v≠v') (θ , inTail v∈π')   = (∉↝ v∉π') (θ , v∈π')
-
+   (∉¬ø v∉π' v≠v') t = prop∈₂ v≠v' (∉↝ v∉π') t
+   
 \end{code}
 
 En la definición realizamos pattern matching sobre \verb|v ∉ π| y sobre
@@ -1472,15 +1511,9 @@ que no podemos construir un elemento de \verb|(v , θ) ∈ ø|.
 
 El siguiente caso a contemplar es cuando \verb|v| no está en el contexto \verb|π = |\\ \verb|( v'  , θ' ) ▷ π' ｢ v'∉π' ｣|,
 representado por el constructor \verb|∉¬ø|. Observemos que para definir este caso de pattern matching
-tendremos un elemento de \verb|¬ (v ≡ v')| y uno de \verb|v ∉ π'|.
-
-Dentro de este caso tenemos dos opciones: \verb|(v , θ) ∈ π| para algún \verb|θ| porque el par
-se encuentra en la cabeza de \verb|π|, o porque se encuentra en la cola, y esto está expresado en los dos
-casos de pattern matching. En el primero de ellos observemos que tenemos un elemento de
-\verb|v ≡ v'|, por lo cual podremos obtener $\bot$ ya que teníamos también \verb|¬ (v ≡ v')|.
-
-En el último caso el constructor \verb|inTail| contiene un elemento de \verb|(v , θ) ∈ π'| pero también teníamos
-uno de \verb|v ∉ π'| por lo que podremos obtener $\bot$ utilizando una llamada recursiva.
+tendremos un elemento de \verb|¬ (v ≡ v')| y uno de \verb|v ∉ π'|. A partir de este último podemos
+hacer una llamada recursiva para obtener \verb|¬ (∃ (λ θ → (v , θ) ∈ π')| y entonces podemos utilizar
+la propiedad que definimos previamente \verb|prop∈₂|.
 \medskip
 
 La otra implicación que queremos definir es que si no existe un tipo $\theta$ tal que
@@ -1490,15 +1523,9 @@ que llamamos \verb|∉↜| para expresar esto:
 \begin{code}
    
 ∉↜ : ∀ {v} {π} → ¬ (∃ (λ θ → (v , θ) ∈ π)) → v ∉ π
-∉↜ {v} {ø} t↑           = ∉ø
-∉↜ {v} {(v' , θ') ▷ π' ｢ p ｣} t↑ = ∉¬ø (∉↜ (f t↑)) (g t↑)
-  where
-    f : ¬ (∃ (λ θ → (v , θ) ∈ ((v' , θ') ▷ π' ｢ p ｣))) →
-        ¬ (∃ (λ θ → (v , θ) ∈ π'))
-    f t↑ (θ , v∈π) = t↑ (θ , (inTail v∈π))
-    g : ¬ (∃ (λ θ → (v , θ) ∈ ((v' , θ') ▷ π' ｢ p ｣))) →
-        ¬ (v ≡ v')
-    g t↑ v=v' = t↑ (θ' , inHead v=v' refl)
+∉↜ {π = ø} t↑           = ∉ø
+∉↜ {π = (v' , θ') ▷ π' ｢ p ｣} t↑ = ∉¬ø (∉↜ (proj₁ $ prop∈₁ t↑)) 
+                                       (proj₂ $ prop∈₁ t↑)
 \end{code}
 
 Aquí podemos hacer pattern matching en el parámetro implícito \verb|π|. Si es vacío
@@ -1506,39 +1533,19 @@ entonces no tenemos otra opción para el valor de retorno que \verb|∉ø|.
 
 Si \verb|π = (v' , θ') ▷ π' ｢ p ｣| entonces el valor de retorno necesariamente tendremos que
 construirlo con \verb|∉¬ø|. 
-Para ello necesitamos dos elementos: uno de tipo \verb|v ∉ π'| y otro de \verb|¬ (v ≡ v')|.
-Observemos que con lo único que contamos es con una función \verb|t↑| que dado un elemento de
-\verb|(∃ (λ θ → (v , θ) ∈ π))| retorna $\bot$. 
-
-Pensemos un poco lo que expresan estos tipos. Contamos con un elemento \verb|t↑| que expresa
-que no existe un tipo \verb|θ| tal que el par \verb|(v,θ)| pertenece al contexto \verb|π|. Pero
-si no pertenece a \verb|π|, luego tampoco pertenece a \verb|π'| (puesto que el primero lo contiene).
-Podemos definir entonces una función \verb|f| que exprese eso: A partir de un elemento de
-\verb|¬(∃ (λ θ → (v , θ) ∈ π))| obtiene uno de \verb|¬(∃ (λ θ → (v , θ) ∈ π'))|.
-
-Luego haciendo una llamada recursiva obtenemos el elemento de \verb|v ∉ π'| que necesitamos.
-
-Por otro lado, el contexto \verb|π| tiene a la variable \verb|v'| en su cabeza, por lo tanto si
-no existe un \verb|θ| tal que \verb|(v,θ)| está en \verb|π|, luego necesariamente \verb|v| debe ser
-distinta a \verb|v'|. La función \verb|g| obtiene un elemento de \verb|¬ (v ≡ v')| y completamos
-la definición.
+Para ello necesitamos dos elementos: uno de tipo \verb|v ∉ π'| y otro de \verb|¬ (v ≡ v')|. Pero
+como tenemos un contexto extendido podemos utilizar la propiedad \verb|prop∈₁| y obtener
+un elemento de \verb|¬ (∃ (λ θ → (v , θ) ∈ π))| y otro de \verb|¬ (v ≡ v')|, que es casi
+lo que necesitamos, solo que al primero de estos tenemos que transformarlo mediante una llamada
+recursiva a \verb|∉↜|.
 \medskip
 
-
-Teniendo este tipo, podemos definir la propiedad de que a partir de un contexto
-$\pi$ y una variable $v$, se puede decidir si existe un tipo $\theta$ tal que
-el par $(v,\theta)$ está en el contexto $\pi$:
-
-Como vimos en la sección anterior, un par dependiente puede interpretarse como el equivalente
-al cuantificador existencial de la lógica de predicados. Para dar un elemento del tipo 
-existencial, tenemos que dar un par, donde el segundo elemento puede depender del primero.
-
-La definición de esta función la hacemos por pattern matching en el contexto $\pi$.
 
 
 \subsubsection{Propiedades de los contextos de tipado}
 
-Con las definiciones sobre contextos de tipado podemos definir algunas propiedades interesantes:
+Podemos definir otras propiedades interesantes sobre los contextos de tipado, que nos serán
+útiles para definir la inferencia de tipos:
 
 \begin{itemize}
   \item Si dos contextos $π₀$ y $π₁$ son equivalentes (es decir $π₀ ≈ π₁$) y
@@ -1548,8 +1555,8 @@ Con las definiciones sobre contextos de tipado podemos definir algunas propiedad
 change∉ : ∀ {v} {π₀} {π₁} → π₀ ≈ π₁ → v ∉ π₀ → v ∉ π₁
 change∉ emptyCtxEq notInEmpty = notInEmpty
 change∉ {v} {t ▷ π₀ ｢ p ｣} {.t ▷ π₁ ｢ p' ｣} 
-            (ctxEq e) (∉¬ø p₀ x) = 
-              ∉¬ø (change∉ e p₀) x
+            (ctxEq e) (∉¬ø p₀ x=x') = 
+              ∉¬ø (change∉ e p₀) x=x'
 \end{code}
 
   \item Si dos contextos $π₀$ y $π₁$ son equivalentes, los tipos $θ₀$ y $θ₁$ son iguales
@@ -1658,12 +1665,6 @@ uniqueType {θ = θ} {θ' = θ'}
 
 \begin{code}
 
-∈absurd : ∀ {π} {v} {w} {θ} {w∉π} → ¬ (v ≡ w) → 
-          ¬ (∃ (λ θ → (v , θ) ∈ π)) → 
-          ¬ (∃ (λ θ' → (v , θ') ∈ ((w , θ) ▷ π ｢ w∉π ｣)))
-∈absurd v≠w p (θ' , inHead v=w _) = v≠w v=w
-∈absurd v≠w p (θ' , inTail v∈π)   = p (θ' , v∈π)
-
 -- Dado un contexto π y una variable v decidimos si existe un tipo θ
 -- tal que (v , θ) ∈ π.
 v∈π? : (v : Var) → (π : Ctx) → Dec (∃ (λ θ → (v , θ) ∈ π))
@@ -1671,7 +1672,7 @@ v∈π? v ø = no (λ {(θ , ())})
 v∈π?  v ( (w , θ) ▷ π' ｢ w∉π' ｣) with v ≟ w | v∈π? v π'
 ... | yes p   | _ = yes (θ , inHead p refl)
 ... | no _    | yes (θ' , v,θ'∈π') = yes (θ' , inTail v,θ'∈π')
-... | no v≠w  | no p = no (∈absurd v≠w p)
+... | no v≠w  | no p = no (prop∈₂ v≠w p)
 
 
 inferVar : (π : Ctx) → (v : Var) → Dec (∃ (λ θ → π ⊢ ″ v ″ ∷ θ))

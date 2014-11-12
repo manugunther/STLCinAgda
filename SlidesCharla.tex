@@ -1,0 +1,165 @@
+\documentclass[xcolor=dvipsnames]{beamer} % en min\'uscula!
+\usefonttheme{professionalfonts} % fuentes de LaTeX
+\usetheme{Warsaw} % tema escogido en este ejemplo
+\usecolortheme[named=Emerald]{structure}
+%%%% packages y comandos personales %%%%
+\usepackage[latin1]{inputenc}
+\usepackage{latexsym,amsmath,amssymb} % S\'imbolos
+\usepackage{xcolor}
+\usepackage{MnSymbol}
+
+\newcommand{\cf}[1]{\textcolor{blue}{#1}}
+\newcommand{\ct}[1]{\textcolor{blue}{#1}}
+\newcommand{\cc}[1]{\textcolor{green}{#1}}
+\newcommand{\ck}[1]{\textcolor{orange}{#1}}
+
+\newcommand{\N}{\ct{\mathbb{N}}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\T}{ \ \ \ \ }
+
+\begin{document}
+\title{Creando un mundo mejor con Agda}
+\author{{Alejandro Gadea, Emmanuel Gunther}\\
+\vspace*{0.5cm}}
+\date{14 de Noviembre de 2014}
+\frame{\titlepage}
+
+\section{Introducci\'on}
+
+\begin{frame}
+\frametitle{Introducci\'on}
+
+\begin{block}{Naturales}
+
+\ck{data} $\N$ : \ct{Set} \ck{where}\\
+\ \ \ \ \cc{zero} : $\N$\\
+\ \ \ \ \cc{suc}  : (n : $\N$) $\ra$ $\N$
+
+\end{block}
+
+\pause
+
+\begin{block}{Naturales}
+
+\ck{data} \ct{\_$\leq$\_} : $\N$ $\ra$ $\N$ $\ra$ \ct{Set} \ck{where}\\
+\ \ \ \ \cc{z$\leq$n} : \{n : $\N$\}                 $\ra$ \cc{zero}  \ct{$\leq$} n\\
+\ \ \ \ \cc{s$\leq$s} : \{m n : $\N$\} $\ra$ (m$\leq$n : m \ct{$\leq$} n) $\ra$ \cc{suc} m \ct{$\leq$} \cc{suc} n
+
+\end{block}
+
+\pause
+
+\begin{block}{Naturales}
+
+\cf{\_$+$\_} : $\N$ $\ra$ $\N$ $\ra$ $\N$\\
+\cc{zero}  \cf{$+$} n $=$ n\\
+\cc{suc} m \cf{$+$} n $=$ \cc{suc} (m \cf{$+$} n)
+
+\end{block}
+
+\end{frame}
+
+\begin{frame}
+\frametitle{Introducci\'on}
+
+\begin{block}{Producto}
+
+\ck{data} \ct{\_$\times$\_} (A B : \ct{Set}) : \ct{Set} \ck{where}\\
+\ \ \ \ \cc{\_$,$\_} : A $\ra$ B $\ra$ A \ct{$\times$} B
+
+\end{block}
+
+\pause
+
+\begin{block}{Vectores}
+\ck{data} \ct{Vec} (A : \ct{Set}) : $\N$ $\ra$ \ct{Set} \ck{where}\\
+\T \cc{$[]$}     : \ct{Vec} A \cc{zero}\\
+\T \cc{\_$::$\_} : {n : $\N$} $\ra$ A $\ra$ \ct{Vec} A n $\ra$ \ct{Vec} A (\cc{suc} n)
+\end{block}
+
+\pause
+
+\begin{block}{Zip}
+
+\cf{zip} : \{A B : \ct{Set}\} \{n : $\N$\} $\ra$ 
+\ct{Vec} A n $\ra$ \ct{Vec} B n $\ra$ \ct{Vec} (A \ct{$\times$} B) n\\
+\cf{zip} \cc{$[]$} \cc{$[]$} $=$ \cc{$[]$}\\
+\cf{zip} (a \cc{$::$} vas) (b \cc{$::$} vbs) $=$ (a \cc{$,$} b) \cc{$::$} (\cf{zip} vas vbs)
+
+\end{block}
+
+\end{frame}
+
+\begin{frame}
+\frametitle{Introducci\'on}
+
+\begin{block}{$\#$-filter}
+
+\cf{$\#$-filter} : \{A : \ct{Set}\} \{n : $\N$\} $\ra$ (A $\ra$ \ct{Bool}) $\ra$ \ct{Vec} A n $\ra$ $\N$\\
+\cf{$\#$-filter} p \cc{$[]$} $=$ \cc{zero}\\
+\cf{$\#$-filter} p (x \cc{$::$} xs) \ck{with} p x\\
+$\ldots$ $|$ \cc{true}  $=$ \cc{suc} (\cf{$\#$-filter} p xs)\\
+$\ldots$ $|$ \cc{false} $=$ \cf{$\#$-filter} p xs
+
+\end{block}
+
+\pause
+
+\begin{block}{filter}
+
+\cf{filter} : \{A : \ct{Set}\} \{n : $\N$\} $\ra$\\
+\ \ \ \ \ \ \ \ \ (p : A $\ra$ \ct{Bool}) $\ra$ (xs : \ct{Vec} A n) $\ra$ \ct{Vec} A (\cf{$\#$-filter} p xs)\\
+\cf{filter} p \cc{$[]$} $=$ \cc{$[]$}\\
+\cf{filter} p (x \cc{$::$} xs) \ck{with} p x\\
+$\ldots$ $|$ \cc{true}  $=$ x \cc{$::$} (\cf{filter} p xs)\\
+$\ldots$ $|$ \cc{false} $=$ \cf{filter} p xs
+
+\end{block}
+
+\end{frame}
+
+\begin{frame}
+
+\begin{block}{filter mejorado}
+
+\cf{filterImproved} : \{A : \ct{Set}\} \{n : $\N$\} $\ra$\\
+\T \T \T \T \ \ (A $\ra$ \ct{Bool}) $\ra$ (\ct{Vec} A n) $\ra$ \ct{$\exists$} ($\lambda$ m $\ra$ \ct{Vec} A m)\\
+\cf{filterImproved} p \cc{$[]$} $=$ (\cc{zero} \cc{$,$} \cc{$[]$})\\
+\cf{filterImproved} p (x \cc{$::$} xs) \ck{with} p x\\
+$\ldots$ $|$ \cc{false} $=$ \cf{filterImproved} p xs\\
+$\ldots$ $|$ \cc{true} $=$ \ck{let} (n' \cc{$,$} xs') $=$ \cf{filterImproved} p xs\\
+\T \T \T  \ \ck{in} (\cc{suc} n' \cc{$,$} x \cc{$::$} xs')
+\end{block}
+
+\end{frame}
+
+\begin{frame}
+
+\begin{block}{Propiedad sobre el orden de los naturales}
+
+\cf{prop$\leq$} : \{m n : $\N$\} $\ra$ m \ct{$\leq$} n $\ra$ m \cf{prop$\leq$} \cc{suc} n\\
+\cf{prop$\leq$} \cc{z$\leq$n} = \cc{z$\leq$n}\\
+\cf{prop$\leq$} (\cc{s$\leq$s} m$\leq$n) = \cc{s$\leq$s} (\cf{prop$\leq$} m$\leq$n)
+
+\end{block}
+
+\begin{block}{filter mejorado y con prueba}
+
+\cf{filterImproved'} : \{A : \ct{Set}\} \{n : $\N$\} $\ra$\\
+\T \T \T \T \ \ 
+(A $\ra$ \ct{Bool}) $\ra$ (\ct{Vec} A n) $\ra$\\
+\T \T \T \T \ \ 
+\ct{$\exists$} ($\lambda$ m $\ra$ \ct{Vec} A m \ct{$\times$} m \ct{$\leq$} n)\\
+\cf{filterImproved'} p \cc{$[]$} $=$ (\cc{zero} \cc{$,$} \cc{$[]$} \cc{$,$} \cc{z$\leq$n})\\
+\cf{filterImproved'} p (x \cc{$::$} xs) \ck{with} p x $|$ \cf{filterImproved'} p xs\\
+$\ldots$ $|$ \cc{false} $|$ (n' \cc{$,$} xs' \cc{$,$} m$\leq$n) = 
+(n' \cc{$,$} xs' \cc{$,$} \cf{prop$\leq$} m$\leq$n)\\
+$\ldots$ $|$ \cc{true}  $|$ (n' \cc{$,$} xs' \cc{$,$} m$\leq$n) = 
+(\cc{suc} n' , x \cc{$::$} xs' , \cc{s$\leq$s} m$\leq$n)
+
+\end{block}
+
+\end{frame}
+
+\end{document}
+

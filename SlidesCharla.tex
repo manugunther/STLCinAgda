@@ -17,6 +17,18 @@
 \newcommand{\ra}{\rightarrow}
 \newcommand{\T}{ \ \ \ \ }
 
+ \newcommand{\tjud}[2]
+  {\ensuremath{#1\,:\,#2}}
+ \newcommand{\depFun}[3] {
+  {\ensuremath{\Pi_{(\tjud{#1}{#2})}\,#3\,#1}}
+ }
+ \newcommand{\cprod}[2]
+  {\ensuremath{#1 \times #2}
+ }
+ \newcommand{\depPair}[3]
+ {\ensuremath{\Sigma_{(\tjud{#1}{#2})}\,#3\,#1}
+ }
+
 \begin{document}
 \beamertemplatenavigationsymbolsempty
 \title{Creando un mundo mejor con Agda}
@@ -27,17 +39,222 @@
 
 \section{Introducción}
 
+\begin{frame}
+
+\begin{block}{ }
+ En el desarrollo de software los programas se escriben esperando que
+ satisfaga una especificación.
+\end{block}
+
+\pause
+
+\begin{exampleblock}{Especificación de head}
+ La función \cf{head} toma una lista de elementos no vacía y retorna el primero de ellos.
+\end{exampleblock}
+
+\pause
+
+\begin{block}{}
+ En la práctica en general no se asegura que un programa cumpla con la especificación.
+\end{block}
+
+
+\end{frame}
 
 \begin{frame}
 
-- Presentar las motivaciones para la teoría de tipos dependientes,
-  usando el ejemplo del head
-- Resumen teoría de tipos, mencionando la correspondencia con la lógica.
-- Agda
-- 
+\begin{block}{ }
+ Los sistemas de tipos agregan expresividad a los programas, permitiendo expresar propiedades que deben satisfacer.
+\end{block}
+
+\pause
+
+\begin{exampleblock}{head en python}
+  \ck{def} \cf{head} (l):
+  
+  \T \ck{return} l[0]
+\end{exampleblock}
+
+\pause
+
+\begin{block}{}
+  Podríamos tener en un programa la línea \cf{head} (\cc{true}) (lo cual no cumple una precondición) 
+  y tendríamos un error en tiempo de ejecución.
+\end{block}
+
+\end{frame}
+
+\begin{frame}
+  \begin{block}{}
+   En un lenguaje con sistema de tipos fuerte podemos especificar que la función \cf{head} 
+   toma como argumento una lista y retorna un elemento:
+  \end{block}
+
+  \pause
+  
+  \begin{exampleblock}{head en haskell}
+    \cf{head} :: [a] $\rightarrow$ a
+    
+    \cf{head} (x : xs) = x
+  \end{exampleblock}  
+
+  \pause
+  
+  \begin{block}{}
+    Sin embargo podríamos hacer \cf{head} $[]$, lo cual violaría la precondición de que la lista no sea vacía.
+     y tendríamos un error en tiempo de ejecución.
+  \end{block}
   
 
 \end{frame}
+
+\begin{frame}
+  \begin{block}{}
+    Fortaleciendo el sistema de tipos podemos agregar información sobre lo que se espera de un programa:
+  \end{block}
+
+  \pause
+  
+  \begin{exampleblock}{head en agda}
+    \cf{head} : \{a : Set\}  $\rightarrow$ (xs : List a) $\rightarrow$ 0 $<$ length xs $\rightarrow$ a \\
+    \cf{head} $[]$ ()\\
+    \cf{head} (x $ :: $ xs) \_ = x
+  \end{exampleblock}  
+
+  \pause
+  
+  \begin{block}{}
+    La función \cf{head} ahora espera una lista de elementos y una \textit{prueba} de que tiene más de un elemento.
+  \end{block}
+
+  \pause
+  
+  \begin{block}{}
+    Ahora nunca podría llamarse \cf{head} con una lista vacía ya que no se podría \textit{construir} 0 $<$ length $[]$.
+  \end{block}
+
+\end{frame}
+
+\section{Teoría de tipos}
+
+\begin{frame}
+  \begin{block}{}
+   La teoría que permite tener un sistema de tipos con esta expresividad es la \textbf{Teoría de Tipos}.
+  \end{block}
+  
+  \pause
+  
+  \begin{block}{}
+   Surge como una teoría fundacional de la matemática. Es alternativa a la clásica teoría de conjuntos que 
+   estudiamos en matemática.
+  \end{block}  
+
+  \pause
+    
+  \begin{block}{}
+    En vez de tener proposiciones lógicas y conjuntos de elementos, en la teoría de tipos sólo existen los \textbf{tipos}. 
+  \end{block}
+
+\end{frame}
+
+\begin{frame}
+
+    \begin{block}{}
+     Un \textbf{tipo} puede interpretarse como un conjunto de elementos, pero también como una proposición
+     lógica, y los elementos del mismo serán \textbf{pruebas} de su validez.
+    \end{block}
+    
+    \pause
+
+    \begin{block}{}
+     Para que exista un elemento, debe tener un tipo. De esta manera no podremos expresar algo como ``sea
+     $x$ tal que ...'' Sino que sólo podemos hablar de $x\,:\,A$ ($x$ tiene tipo $A$).
+    \end{block}
+    
+
+\end{frame}
+
+\begin{frame}
+
+    \begin{block}{}
+     Puesto que todo elemento debe tener un tipo, también los tipos mismos deberán tenerlo. A los tipos de tipos
+     se les suele llamar \textit{universos}.
+    \end{block}
+    
+    \pause
+
+    \begin{block}{}
+     Para evitar paradojas se introduce una jerarquía en los universos:
+     \begin{align*}
+      \tjud{U_0}{\tjud{U_1}{\tjud{U_2}{...}}}
+     \end{align*}
+    \end{block}
+    
+\end{frame}
+
+
+\begin{frame}
+  
+  \begin{block}{Definición de tipos}
+   \begin{itemize}
+    \item Reglas de formación.
+    \item Constructores o reglas de introducción.
+    \item Eliminadores y regla de computación.
+   \end{itemize}
+
+  \end{block}
+
+  \pause
+  
+  \begin{block}{Funciones}
+   \begin{itemize}
+    \item Dados $\tjud{A}{U}$, $\tjud{B}{U}$ se define el tipo $A \rightarrow B$.
+    \item Para \textbf{introducir} una función se puede realizar una definición o utilizar
+    el constructor $\lambda\,(\tjud{x}{A}).E$
+    \item El \textbf{eliminador} en las funciones es la \textbf{aplicación}:
+      \begin{align*}
+        (\lambda\,x.E)\,a\;\equiv\;E'
+      \end{align*}
+     donde $E'$ es igual a $E$ reemplazando $x$ por $a$.
+   \end{itemize}
+
+  \end{block}
+
+\end{frame}
+
+\begin{frame}
+    \begin{block}{}
+     Con el tipo de las funciones, se puede definir una función que retorne un tipo, a lo que solemos
+     llamar \textbf{familias de tipos} (o familias indexadas en algún tipo):
+    \end{block}
+
+    \pause
+   
+   \begin{block}{Familias de tipos}
+      Si $\tjud{A}{U}$, a la función $\tjud{B}{A \rightarrow U}$ se le llama familia indexada por $A$.
+  \end{block}
+
+\end{frame}
+
+\begin{frame}
+    \begin{block}{}
+     Se pueden definir funciones más generales que las habituales donde el valor de retorno puede depender
+     del valor del dominio:
+    \end{block}
+  
+   \pause
+
+    \begin{block}{Funciones dependientes}
+      \begin{itemize}
+       \item Dados $\tjud{A}{U}$ y $\tjud{B}{A \rightarrow U}$ se define el tipo $\depFun{a}{A}{B}$. Otra notación para
+             este tipo podría ser $(\tjud{a}{A}) \rightarrow B\,a$.
+       \item Las reglas de introducción y eliminación son las mismas que para las funciones normales.
+      \end{itemize}
+    \end{block}
+    
+
+\end{frame}
+
 
 \begin{frame}
 \frametitle{Introducción a Agda}

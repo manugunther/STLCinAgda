@@ -59,6 +59,7 @@
  \DeclareUnicodeCharacter{65379}{\ensuremath{\rfloor}}
  \DeclareUnicodeCharacter{8759}{\ensuremath{\colon}}
  \DeclareUnicodeCharacter{952}{\ensuremath{\theta}}
+ \DeclareUnicodeCharacter{964}{\ensuremath{\tau}}
  \DeclareUnicodeCharacter{960}{\ensuremath{\pi}}
  \DeclareUnicodeCharacter{955}{\ensuremath{\lambda}}
  \DeclareUnicodeCharacter{931}{\ensuremath{\Sigma}}
@@ -1351,6 +1352,23 @@ infixl 100 _●_
 
 \end{code}
 
+Algunos ejemplos de términos del cálculo lambda según nuestra definición son:
+
+\begin{code}
+
+identity : LambdaTerm
+identity = λ' "x" ∶ ⊙  ⟶  ″ "x" ″ 
+
+twice : LambdaTerm
+twice = λ' "f" ∶ (⊙ ⟼ ⊙) ⟶ λ' "x" ∶ ⊙  ⟶ ″ "f" ″ ● (″ "f" ″ ● ″ "x" ″)
+
+dtwice : LambdaTerm
+dtwice = twice ● twice
+
+thrice : LambdaTerm
+thrice = λ' "f" ∶ (⊙ ⟼ ⊙) ⟶ λ' "x" ∶ ⊙  ⟶ ″ "f" ″ ● (″ "f" ″ ● (″ "f" ″ ● ″ "x" ″))
+
+\end{code}
 
 \subsection{Contextos de tipado}
 
@@ -1697,7 +1715,7 @@ La regla para el juicio de tipado de una variable es la siguiente:
 \end{center}
 
 Observemos que para poder concluir que la variable $x$ tiene tipo $θ$
-bajo el contexto $π$ necesitamos que el par $(x,θ)$ se encuentre en el contexto
+bajo el contexto $π$ necesitamos que el par $(x,θ)$ se encuentre en 
 $π$. Podremos entonces inferir el tipo si esto se satisface: 
 
 \begin{code}
@@ -1720,183 +1738,238 @@ de tipado retorna $\bot$.
 
 \subsubsection{Abstracción lambda}
 
+Para inferir una abstracción lambda tenemos la siguiente regla:
+
+\begin{center}
+\AxiomC{$π , (x,θ) ⊢ t : θ'$}
+\UnaryInfC{$ π ⊢ λ x_θ\,.\,t : θ → θ'$}
+\DisplayProof
+\end{center}
+
+Observemos que para poder inferir que el término $λ x_θ\,.\,t$ tiene tipo
+$θ → θ'$ se tienen que dar dos cosas:
+
+\begin{itemize}
+  \item Que la variable $x$ no pertenezca al contexto $\pi$. Puesto que tenemos que los contextos
+        bien construidos no repiten variables, para poder construir $π , (x,θ)$ necesariamente
+        $x$ no podrá estar en $\pi$.
+        
+  \item Que bajo el contexto $π , (x,θ)$ el subtérmino $t$ tenga tipo $\theta'$.
+\end{itemize}
+
+Si alguna de estas dos condiciones no se cumple no podremos inferir un tipo para la abstracción. Definamos
+entonces dos funciones que retornen que no existe un juicio de tipado bajo estas situaciones:
+
 \begin{code}
 
-inferL : {v : Var} {θ : Type} {π : Ctx} {t : LambdaTerm} 
-          {p : v ∉ π} → 
-          ¬ (∃ (λ θ' → (v , θ) ▷ π ｢ p ｣ ⊢ t ∷ θ')) →
-          ¬ (∃ (λ θ'' → π ⊢ λ' v ∶ θ ⟶ t ∷ θ''))
-inferL {v} {θ} {π} {t} {p} 
-            t↑ (.θ ⟼ θ' , _∣ₗ {.t} {.v} {.θ} {.θ'} {.π} {p'} t∷θ' ) = 
-                   t↑ (θ' , substCtx (ctxEq reflCtx) refl t∷θ') 
-inferL t↑ ( ⊙ , () )
+noInferAbs₁ :  ∀ {v} {θᵥ} {θ} {π} {t} → (v , θ) ∈ π → 
+             ¬ (∃ (λ θ' → π ⊢ λ' v ∶ θᵥ ⟶ t ∷ θ'))
+noInferAbs₁ v∈π (⊙ , ())
+noInferAbs₁ {θ = θ} v∈π (θᵥ ⟼ θ' , _∣ₗ {p = v∉π} π⊢λ't∷θ') = ∉↝ v∉π (θ , v∈π)
 
-inferL2 : ∀ {v} {θᵥ} {θ} {π} {t} → (v , θ) ∈ π → ¬ (∃ (λ θ' → π ⊢ λ' v ∶ θᵥ ⟶ t ∷ θ'))
-inferL2 v∈π (⊙ , ())
-inferL2 {θ = θ} v∈π (θᵥ ⟼ θ' , _∣ₗ {p = v∉π} π⊢λ't∷θ') = ∉↝ v∉π (θ , v∈π)
+\end{code}
 
-inferApp₁₂ : ∀ {π} {t₁} {t₂} → 
-             ∃ (λ θ → π ⊢ t₁ ∷ θ) →
-             ∃ (λ θ' → π ⊢ t₂ ∷ θ') →
-             Dec (∃ (λ θ → π ⊢ (t₁ ● t₂) ∷ θ))
-inferApp₁₂ {π} {t₁} {t₂} (⊙ , π⊢t₁∷⊙) π⊢t₂∷θ = no t₁Absurdo
-  where
-    t₁Absurdo : ¬ ∃ (λ θ → π ⊢ (t₁ ● t₂) ∷ θ)
-    t₁Absurdo (θ' , _∧_∣ₐ {θ = θ} π⊢t₁∷θ⟼θ' π⊢t₂∷θ) with ⊙ ≟ₜ θ ⟼ θ'
-    ... | yes ()
-    ... | no ¬⊙≡θ⟼θ' = ¬⊙≡θ⟼θ' $ uniqueType π⊢t₁∷⊙ π⊢t₁∷θ⟼θ'
-inferApp₁₂ {π} {t₁} {t₂} (θ ⟼ θ' , π⊢t₁∷θ⟼θ') (θ'' , π⊢t₂∷θ'') with θ ≟ₜ θ''
-... | yes θ≡θ'' = yes (θ' , (π⊢t₁∷θ⟼θ' ∧ substCtx reflCtx (sym θ≡θ'') π⊢t₂∷θ'' ∣ₐ))
-... | no ¬θ≡θ'' = no t₂Absurdo
-  where 
-    t₂Absurdo : ¬ ∃ (λ θ → π ⊢ (t₁ ● t₂) ∷ θ)
-    -- esto va a ser groso
-    t₂Absurdo (θ₂ , π⊢t₁∷θ₁⟼θ₂ ∧ π⊢t₂∷θ₁ ∣ₐ) = 
-                    -- θ ≡ θ₁
-      ¬θ≡θ'' $ trans (proj₁ $ cong⟼⁻¹ $ uniqueType π⊢t₁∷θ⟼θ' π⊢t₁∷θ₁⟼θ₂) 
-                    -- θ₁ ≡ θ''
-                    (uniqueType π⊢t₂∷θ₁ π⊢t₂∷θ'')
+Si se da que \verb|(v , θ) ∈ π| entonces no existe tipo que permita construir un juicio válido
+para el término \verb|π ⊢ λ' v ∶ θᵥ ⟶ t| bajo el contexto \verb|π|.
 
-inferApp₁ : ∀ {π} {t₁} {t₂} → ¬ (∃ (λ θ → π ⊢ t₁ ∷ θ)) → ¬ (∃ (λ θ → π ⊢ (t₁ ● t₂)  ∷ θ))
-inferApp₁ ¬π⊢t₁∷θ (θ' , _∧_∣ₐ {θ = θ} {θ' = .θ'} π⊢t₁∷θ⟼θ' π⊢t₂∷θ' ) = ¬π⊢t₁∷θ (θ ⟼ θ' , π⊢t₁∷θ⟼θ')
+Como ya hicimos previamente, para negar un tipo existencial tenemos que construir $\bot$ a partir
+de un par. En este caso, el segundo componente del par es un juicio de tipado para la abstracción.
+Si recordamos la definición de los juicios de tipado vemos que uno de los parámetros necesarios
+para poder construirlo es un elemento de \verb|v ∉ π|. A partir de éste, utilizando \verb|∉↝| obtenemos
+una función que dado que existe \verb|θ| tal que \verb|(v , θ) ∈ π| retorna $\bot$ y entonces podemos aplicarla
+al par \verb|(θ , v∈π)|.
+\noindent
 
-inferApp₂ : ∀ {π} {t₁} {t₂} → ¬ (∃ (λ θ → π ⊢ t₂ ∷ θ)) → ¬ (∃ (λ θ → π ⊢ (t₁ ● t₂)  ∷ θ))
-inferApp₂ ¬π⊢t₂∷θ (θ' , _∧_∣ₐ {θ = θ} {θ' = .θ'} π⊢t₁∷θ⟼θ' π⊢t₂∷θ') = ¬π⊢t₂∷θ (θ , π⊢t₂∷θ')
+\begin{code}
+
+noInferAbs₂ : {v : Var} {θ : Type} {π : Ctx} {t : LambdaTerm}
+            {p : v ∉ π} → 
+            ¬ (∃ (λ θ' → (v , θ) ▷ π ｢ p ｣ ⊢ t ∷ θ')) →
+            ¬ (∃ (λ θ'' → π ⊢ λ' v ∶ θ ⟶ t ∷ θ''))
+noInferAbs₂ {v} {θ} {π} {t} {p} 
+            π⁺⊢t∷_↑ (.θ ⟼ θ' , _∣ₗ {.t} {.v} {.θ} {.θ'} {.π} {p'} t∷θ' ) = 
+                   π⁺⊢t∷_↑ (θ' , substCtx (ctxEq reflCtx) refl t∷θ') 
+noInferAbs₂ π⁺⊢t∷_↑ ( ⊙ , () )
+
+\end{code}
+
+Si se da que no existe un tipo \verb|θ'| tal que el término \verb|t| tiene tipo
+\verb|θ'| bajo el contexto extendido \verb|π⁺| = \verb|(v , θ) ▷ π ｢ p ｣| (donde \verb|p| es una prueba
+de que \verb|v ∉ π|) entonces tampoco existe un tipo para construir un juicio de tipado
+válido para el término \verb|λ' v ∶ θ ⟶ t| bajo el contexto \verb|π|.
+
+Para esta definición contamos con una función a la que llamamos \verb|π⁺⊢t∷_↑| que obtiene $\bot$ a partir de 
+un par formado por un tipo \verb|θ'| y un juicio de tipado \verb|(v , θ) ▷ π ｢ p ｣ ⊢ t ∷ θ'|.
+Lo que necesitamos es construir $\bot$ a partir de un par formado por algún tipo \verb|θ ⟼ θ'|
+y un juicio de tipado \verb|π ⊢ λ' v ∶ θ ⟶| \verb|t ∷ θ ⟼ θ'|. Pero si vemos la definición de los juicios
+de tipado, si tenemos este juicio para la abstracción, entonces tenemos un juicio 
+\verb|(v , θ) ▷ π ｢ p' ｣ ⊢| \verb|t ∷ θ'| (donde \verb|p'| es una prueba de que \verb|v ∉ π|), que es casi
+el mismo juicio que necesitamos para poder aplicar \verb|π⁺⊢t∷_↑|, sólo que el contexto no es exactamente el mismo
+(puesto que no podemos asegurar que \verb|p| y \verb|p'| son iguales). Pero como tenemos definidas propiedades sobre
+la equivalencia de contextos, podemos substituir uno por otro mediante la función \verb|substCtx| completando
+la definición.
+\medskip
+
+
+Con estas dos funciones tenemos definido qué sucede cuando las condiciones necesarias para inferir una abstracción
+no se cumplen. En el caso que sí se cumplan podemos inferir la abstracción:
+
+\begin{code}
+inferAbs : ∀ {v} {θ} {θ'} {π} {v∉π} {t} → ((v , θ) ▷ π ｢ v∉π ｣) ⊢ t ∷ θ' →
+           ∃ (λ θ'' → π ⊢ λ' v ∶ θ ⟶ t ∷ θ'')
+inferAbs {θ = θ} {θ' = θ'} π⁺⊢t∷θ' = (θ ⟼ θ' , π⁺⊢t∷θ' ∣ₗ)
+\end{code}
+
+Dado que las condiciones se dan, podemos concluir que existe un tipo, el cual es \verb|θ ⟼ θ'|, tal que
+\verb|π ⊢ λ' v ∶ θ ⟶ t ∷ θ ⟼ θ'|.
+
+\subsubsection{Aplicación}
+
+Para inferir el tipo de una aplicación tenemos la siguiente regla:
+
+\begin{center}
+\AxiomC{$π ⊢ t₀ : θ' → θ$}
+\AxiomC{$π ⊢ t₁ : θ'$}
+\BinaryInfC{$ π ⊢ t₀ \ t₁ : θ$}
+\DisplayProof
+\end{center}
+
+Tenemos entonces que para que el término $t₀ \ t₁$ tenga tipo $\theta$ bajo $\pi$ 
+deben existir juicios de tipado para los subtérminos como lo expresa la regla. 
+
+Como hicimos para la abstracción, pensemos en qué casos no podemos inferir un tipo
+para la aplicación:
+
+\begin{itemize}
+  \item[1] Si no puede inferirse tipo para $t_0$ bajo $\pi$.
+  \item[2] Si no puede inferirse tipo para $t_1$ bajo $\pi$.
+  \item[3] Si existe un juicio de tipado para $t_0$ pero con el tipo $⊙$.
+  \item[4] Si existe juicio de tipado para $t_0$ con un tipo $θ_0 ⟼ θ_0'$ 
+           y juicio para $t_1$ con tipo $\theta_1$ pero $\theta_0$ es distinto
+           a $\theta_1$.
+\end{itemize}
+
+Definamos entonces funciones para cuando se cumplan cada una de estas condiciones:
+
+\begin{code}
+
+noInferApp₁ : ∀ {π} {t₀} {t₁} → ¬ (∃ (λ θ₀ → π ⊢ t₀ ∷ θ₀)) → 
+              ¬ (∃ (λ θ → π ⊢ (t₀ ● t₁)  ∷ θ))
+noInferApp₁ π⊢t₀∷_↑
+            (θ' , _∧_∣ₐ {θ = θ} {θ' = .θ'} π⊢t₀∷θ⟼θ' π⊢t₁∷θ' ) = 
+                                                 π⊢t₀∷_↑ (θ ⟼ θ' , π⊢t₀∷θ⟼θ')
+
+\end{code}
+
+\noindent Si no existe tipo \verb|θ| tal que \verb|π ⊢ t₀ ∷ θ| entonces podemos construir
+$\bot$ asumiendo que tenemos un tipo \verb|θ'| y un juicio \verb|π ⊢ (t₀ ● t₁)  ∷ θ'|.
+                                                 
+\begin{code}
+
+noInferApp₂ : ∀ {π} {t₀} {t₁} → ¬ (∃ (λ θ₁ → π ⊢ t₁ ∷ θ₁)) → 
+              ¬ (∃ (λ θ → π ⊢ (t₀ ● t₁)  ∷ θ))
+noInferApp₂ π⊢t₁∷_↑
+            (θ' , _∧_∣ₐ {θ = θ} {θ' = .θ'} π⊢t₀∷θ⟼θ' π⊢t₁∷θ') = 
+                                                  π⊢t₁∷_↑ (θ , π⊢t₁∷θ')
+
+\end{code}
+
+\noindent El caso para cuando no se puede inferir un tipo para \verb|t₁| es análogo.
+
+\begin{code}
+
+noInferApp₃ : ∀ {π} {t₀} {t₁} → π ⊢ t₀ ∷ ⊙ →
+              ¬ ∃ (λ θ → π ⊢ (t₀ ● t₁) ∷ θ)
+noInferApp₃ π⊢t₀∷⊙ (θ' , _∧_∣ₐ {θ = θ} π⊢t₁∷θ⟼θ' _) with ⊙ ≟ₜ θ ⟼ θ'
+... | yes ()
+... | no ⊙≡θ⟼θ'↑ = ⊙≡θ⟼θ'↑ $ uniqueType π⊢t₀∷⊙ π⊢t₁∷θ⟼θ' --$
+
+\end{code}
+
+\noindent Si tenemos un juicio \verb|π ⊢ t₀ ∷ ⊙| no podremos construir un juicio
+\verb|π ⊢ (t₀ ● t₁) ∷ θ| ya que en la definición tenemos un elemento de
+\verb|π ⊢ t₀ ∷ θ ⟼ θ'|, es decir, el tipo del subtérmino \verb|t₀| debe ser
+uno construido con \verb|⟼|. Como tenemos definida la igualdad de tipos y como el tipado
+de los términos es único, obtenemos el absurdo que necesitamos.
+          
+
+\begin{code}
+
+noInferApp₄ : ∀ {π} {t₀} {t₁} {θ₀} {θ₀'} {θ₁} → π ⊢ t₀ ∷ θ₀ ⟼ θ₀' →
+              π ⊢ t₁ ∷ θ₁ → ¬ (θ₀ ≡ θ₁) →
+              ¬ ∃ (λ θ → π ⊢ (t₀ ● t₁) ∷ θ)
+noInferApp₄ π⊢t₀∷θ₀⟼θ₀' π⊢t₁∷θ₁ θ₀≡θ₁↑ 
+             (θ , π⊢t₀∷τ₀⟼τ₀' ∧ π⊢t₁∷τ₁ ∣ₐ) = 
+              θ₀≡θ₁↑ $ trans (proj₁ $ cong⟼⁻¹ $ 
+                              uniqueType π⊢t₀∷θ₀⟼θ₀' π⊢t₀∷τ₀⟼τ₀') 
+                             (uniqueType π⊢t₁∷τ₁ π⊢t₁∷θ₁) --$
+
+\end{code}
+
+\noindent En este último caso tenemos que \verb|θ₀| es distinto de \verb|θ₁|, es decir
+tenemos una función que dado un elemento \verb|θ₀ ≡ θ₁| obtiene $\bot$. Podemos
+utilizar propiedades que definimos previamente para obtener este elemento y aplicar la función.
+\medskip
+
+Finalmente, si se dan las condiciones necesarias podemos inferir la aplicación:
+
+\begin{code}
+
+inferApp : ∀ {π} {t₀} {t₁} {θ₀} {θ} → 
+           π ⊢ t₀ ∷ θ₀ ⟼ θ → π ⊢ t₁ ∷ θ₀ → 
+           ∃ (λ θ' → π ⊢ (t₀ ● t₁) ∷ θ')
+inferApp {θ = θ} π⊢t₀∷θ₀⟼θ π⊢t₁∷θ₀ = (θ , π⊢t₀∷θ₀⟼θ ∧ π⊢t₁∷θ₀ ∣ₐ)
+
+\end{code}
+
+\subsubsection{Definición de la función infer}
+
+Ahora sí podemos definir la función \verb|infer|. Para hacerlo 
+utilizamos pattern matching analizando si el término es una variable,
+una abstracción o una aplicación. En el caso de estas dos últimas utilizamos
+la sentencia \verb|with| para analizar cada una de las condiciones que deben satisfacerse
+para poder construir el juicio de tipado tal como lo explicamos previamente y utilizamos
+las funciones que definimos:
+
+\begin{code}
 
 infer : (π : Ctx) → (t : LambdaTerm) → Dec (∃ (λ θ → π ⊢ t ∷ θ))
 infer π ″ v ″ = inferVar π v
-infer π (λ' v ∶ θ ⟶ t) with v∈π? v π
-infer π (λ' v ∶ θ ⟶ t) | yes (θᵥ , v∈π) = no (inferL2 {θᵥ = θ} v∈π)
-infer π (λ' v ∶ θ ⟶ t) | no v∉π with infer ((v , θ) ▷ π ｢ ∉↜ v∉π ｣) t
-infer π (λ' v ∶ θ ⟶ t) | no v∉π | yes (θ' , t∷θ') = yes (θ ⟼ θ' ,  t∷θ' ∣ₗ)
-infer π (λ' v ∶ θ ⟶ t) | no v∉π | no t↑ = no (inferL t↑)
-infer π (t₁ ● t₂) with infer π t₁ | infer π t₂
-infer π (t₁ ● t₂) | no ¬π⊢t₁∷θ⟼θ' | _ = no (inferApp₁ ¬π⊢t₁∷θ⟼θ')
-infer π (t₁ ● t₂) | _ | no ¬π⊢t₂∷θ = no (inferApp₂ ¬π⊢t₂∷θ)
-infer π (t₁ ● t₂) | yes π⊢t₁∷θ⟼θ' | yes π⊢t₂∷θ = inferApp₁₂ π⊢t₁∷θ⟼θ' π⊢t₂∷θ
 
--- infer para términos cerrados
+infer π (λ' v ∶ θ ⟶ t) with v∈π? v π
+... | yes (θᵥ , v∈π) = no (noInferAbs₁ v∈π)
+... | no v∉π with infer ((v , θ) ▷ π ｢ ∉↜ v∉π ｣) t
+...       | no t↑ = no (noInferAbs₂ t↑)
+...       | yes (θ' , t∷θ') = yes (inferAbs t∷θ')
+
+infer π (t₀ ● t₁) with infer π t₀ | infer π t₁
+... | no ¬π⊢t₀∷θ⟼θ' | _ = no (noInferApp₁ ¬π⊢t₀∷θ⟼θ')
+... | _ | no ¬π⊢t₁∷θ = no (noInferApp₂ ¬π⊢t₁∷θ)
+... | yes (⊙ , π⊢t₀∷⊙) | yes _ = no (noInferApp₃ π⊢t₀∷⊙)
+... | yes (θ₀ ⟼ θ₀' , π⊢t₀∷θ₀⟼θ₀') | yes (θ₁ , π⊢t₁∷θ₁) with θ₀ ≟ₜ θ₁
+...            | no ¬θ₀≡θ₁ = no (noInferApp₄ π⊢t₀∷θ₀⟼θ₀' π⊢t₁∷θ₁ ¬θ₀≡θ₁)
+...            | yes θ₀≡θ₁ = yes (inferApp π⊢t₀∷θ₀⟼θ₀' 
+                                 (substCtx reflCtx (sym θ₀≡θ₁) π⊢t₁∷θ₁))
+
+\end{code}
+
+Si queremos considerar solo términos cerrados (sin variables libres) podemos utilizar la siguiente
+función:
+
+\begin{code}
+
 inferType : (t : LambdaTerm) → Dec (∃ (λ θ → ø ⊢ t ∷ θ))
 inferType = infer ø 
 
+\end{code}
 
-identity : LambdaTerm
-identity = λ' "x" ∶ ⊙  ⟶  ″ "x" ″ 
+Obtuvimos entonces (luego de un poco de trabajo) un inferidor de tipos
+para la definición del cálculo lambda que dimos, el cual no solo retorna un tipo
+para un término en el caso que se pueda tipar, sino que si se puede construir
+un juicio de tipado obtenemos el árbol de tipado y en el caso que no, obtenemos una prueba
+de por qué no se puede tipar. 
 
-twice : LambdaTerm
-twice = λ' "f" ∶ (⊙ ⟼ ⊙) ⟶ λ' "x" ∶ ⊙  ⟶ ″ "f" ″ ● (″ "f" ″ ● ″ "x" ″)
-
-
-
--- Este termino no tipa sin variables de tipo
-dtwice : LambdaTerm
-dtwice = twice ● twice
-
-
--- anda
-thrice : LambdaTerm
-thrice = λ' "f" ∶ (⊙ ⟼ ⊙) ⟶ λ' "x" ∶ ⊙  ⟶ ″ "f" ″ ● (″ "f" ″ ● (″ "f" ″ ● ″ "x" ″))
-
-{-
-
-θ₁ : Type
-θ₁ = ⊙ ⟼ ⊙ ⟼ ⊙
-
-t₁ : LambdaTerm
-t₁ = λ' "f" ⟶ λ' "x" ⟶ ″ "x" ″
-
-θ₂ : Type
-θ₂ = (⊙ ⟼ ⊙) ⟼ (⊙ ⟼ ⊙) ⟼ ⊙ ⟼ ⊙
-
-t₂ : LambdaTerm
-t₂ = λ' "g" ⟶ λ' "f" ⟶ λ' "x" ⟶ ″ "g" ″ ● (″ "f" ″ ● ″ "x" ″)
-
-θ₃ : Type
-θ₃ = (⊙ ⟼ ⊙) ⟼ (⊙ ⟼ ⊙ ⟼ ⊙) ⟼ ⊙ ⟼ ⊙
-
-t₃ : LambdaTerm
-t₃ = λ' "x" ⟶ λ' "f" ⟶ λ' "g" ⟶ ″ "f" ″ ● ″ "g" ″ ● (″ "x" ″ ● ″ "g" ″)
-
--- No anda
-θ₄ : Type
-θ₄ = ((⊙ ⟼ ⊙ ⟼ ⊙) ⟼ ⊙) 
-         ⟼ ((⊙ ⟼ ⊙ ⟼ ⊙) ⟼ ((⊙ ⟼ ⊙ ⟼ ⊙)  ⟼ ⊙) ⟼ ⊙)
-         ⟼ (⊙ ⟼ ⊙ ⟼ ⊙)
-         ⟼ ⊙
-
-t₄ : LambdaTerm
-t₄ = λ' "x" ⟶ 
-     λ' "y" ⟶ 
-     λ' "f" ⟶ 
-            ″ "f" ″
-                  ● (″ "x" ″ ● (λ' "w" ⟶ ″ "f" ″ ● ″ "w" ″))
-                  ● (″ "y" ″ ● ″ "f" ″ ● ″ "x" ″)
-
-Δ : LambdaTerm
-Δ = λ' "x" ⟶ ″ "x" ″ ● ″ "x" ″
-
-ΔΔ : LambdaTerm
-ΔΔ = Δ ● Δ
-
--}
-
--- Examples
-  
-{-
-π₁ : Ctx
-π₁ = ( ( "y" ,′ ⊙) ▷ ø ｢ notInEmpty ｣)
-
-xNotπ₁ : "x" ∉ π₁
-xNotπ₁ = notInNEmpty "x" ø notInEmpty notInEmpty aux
-  where aux : ¬ "x" ≡ "y"
-        aux ()
-
-tyId : ∀ {θ} → ø ⊢ λ' "x" ⟶ ″ "x" ″ ∷ (θ ⟼ θ)
-tyId {θ} = (inHead "x" θ ø notInEmpty refl refl ∣ᵥ) ∣ₗ
--}
--- ej1 : ( ( (var "x") ,′ ⊙) ▷ π₁ ｢ xNotπ₁ ｣) ⊢ (id (var "x")) ∷ ⊙
--- ej1 = tdvar (inHead (var "x") ⊙ π₁ xNotπ₁)
-
--- ej2 : π₁ ⊢ (abs (var "x") (id (var "x"))) ∷ (⊙ ⟼ ⊙)
--- ej2 = tdabs xNotπ₁ ej1
-
-
--- data CheckType : Ctx → LambdaTerm → Type → Set where
---   check : 
-
-
--- p' : {w : Var} {π : Ctx} (v : Var)  → NotInCtx w π →
---      w ≡ v → NotInCtx v π
--- p' {.v} v p refl = p
-
--- infer : {θ : Type} → (π : Ctx) → (t : LambdaTerm) → (π ⊢ t ∷ θ)
--- infer {θ} π' (id v) = tdvar (inHead v θ ((v ,′ θ) ▷ ∅ ｢notInEmpty v｣))
-
-
-  -- where
-  --   mkiCtx : (π : Ctx) → (v : Var) → (θ : Type) → inCtx ( v ,′ θ ) π
-  --   mkiCtx ( ( .v ,  .θ ) ▷ π ｢ p ｣) v θ = (inHead v θ π p)
-
-  --    else inTail (var v) θ π (var w) θ' (mkiCtx π (var v) θ) p
-
-
-
- \end{code}
+Decimos que esta implementación está certificada, ya que tenemos una prueba formal de que el resultado
+de nuestro programa es el correcto.
 
  \end{document}
-
-
-
-
-{-
-infer : {θ : Type} → (π : Ctx) → (t : LambdaTerm) → 
-        TypeDeriv (π ⊢ t ∷ θ)
-infer {θ} π (id v) = tdvar (mkiCtx π v θ)
-
-  where
-
-  mkiCtx : (π : Ctx) → (v : Var) → (θ : Type) → inCtx [ v , θ ] π
-  mkiCtx ([ var w , θ' ] ▷ π ｢ p ｣) (var v) θ =
-    if (w == v) then (inHead (var w) θ' π p)
-      else inTail (var v) θ π (var w) θ' (mkiCtx π (var v) θ) p
--}

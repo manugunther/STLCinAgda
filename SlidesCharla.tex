@@ -1,7 +1,7 @@
 \documentclass[xcolor=dvipsnames]{beamer} % en min\'uscula!
 \usefonttheme{professionalfonts} % fuentes de LaTeX
 \usetheme{Warsaw} % tema escogido en este ejemplo
-\usecolortheme[named=Emerald]{structure}
+\usecolortheme[named=blue]{structure}
 %%%% packages y comandos personales %%%%
 \usepackage[latin1]{inputenc}
 \usepackage{latexsym,amsmath,amssymb} % S\'imbolos
@@ -10,7 +10,7 @@
 
 \newcommand{\cf}[1]{\textcolor{blue}{#1}}
 \newcommand{\ct}[1]{\textcolor{blue}{#1}}
-\newcommand{\cc}[1]{\textcolor{green}{#1}}
+\newcommand{\cc}[1]{\textcolor{ForestGreen}{#1}}
 \newcommand{\ck}[1]{\textcolor{orange}{#1}}
 
 \newcommand{\N}{\ct{\mathbb{N}}}
@@ -18,38 +18,42 @@
 \newcommand{\T}{ \ \ \ \ }
 
 \begin{document}
+\beamertemplatenavigationsymbolsempty
 \title{Creando un mundo mejor con Agda}
 \author{{Alejandro Gadea, Emmanuel Gunther}\\
 \vspace*{0.5cm}}
 \date{14 de Noviembre de 2014}
 \frame{\titlepage}
 
-\section{Introducci\'on}
+\section{Introducción}
+
 
 \begin{frame}
-\frametitle{Introducci\'on}
+
+- Presentar las motivaciones para la teoría de tipos dependientes,
+  usando el ejemplo del head
+- Resumen teoría de tipos, mencionando la correspondencia con la lógica.
+- Agda
+- 
+  
+
+\end{frame}
+
+\begin{frame}
+\frametitle{Introducción a Agda}
+\framesubtitle{Tipos de datos}
 
 \begin{block}{Naturales}
 
 \ck{data} $\N$ : \ct{Set} \ck{where}\\
 \ \ \ \ \cc{zero} : $\N$\\
-\ \ \ \ \cc{suc}  : (n : $\N$) $\ra$ $\N$
+\ \ \ \ \cc{suc}  : $\N$ $\ra$ $\N$
 
 \end{block}
 
 \pause
 
-\begin{block}{Naturales}
-
-\ck{data} \ct{\_$\leq$\_} : $\N$ $\ra$ $\N$ $\ra$ \ct{Set} \ck{where}\\
-\ \ \ \ \cc{z$\leq$n} : \{n : $\N$\}                 $\ra$ \cc{zero}  \ct{$\leq$} n\\
-\ \ \ \ \cc{s$\leq$s} : \{m n : $\N$\} $\ra$ (m$\leq$n : m \ct{$\leq$} n) $\ra$ \cc{suc} m \ct{$\leq$} \cc{suc} n
-
-\end{block}
-
-\pause
-
-\begin{block}{Naturales}
+\begin{block}{Suma de naturales}
 
 \cf{\_$+$\_} : $\N$ $\ra$ $\N$ $\ra$ $\N$\\
 \cc{zero}  \cf{$+$} n $=$ n\\
@@ -60,21 +64,24 @@
 \end{frame}
 
 \begin{frame}
-\frametitle{Introducci\'on}
+\frametitle{Introducción a Agda}
+\framesubtitle{Tipos de datos}
+
+\begin{block}{Vectores}
+\ck{data} \ct{Vec} (A : \ct{Set}) : $\N$ $\ra$ \ct{Set} \ck{where}\\
+\pause
+\T \cc{$[]$}     : \ct{Vec} A \cc{zero}\\
+\pause
+\T \cc{\_$::$\_} : \{n : $\N$\} $\ra$ A $\ra$ \ct{Vec} A n $\ra$ \ct{Vec} A (\cc{suc} n)
+\end{block}
+
+\pause
 
 \begin{block}{Producto}
 
 \ck{data} \ct{\_$\times$\_} (A B : \ct{Set}) : \ct{Set} \ck{where}\\
 \ \ \ \ \cc{\_$,$\_} : A $\ra$ B $\ra$ A \ct{$\times$} B
 
-\end{block}
-
-\pause
-
-\begin{block}{Vectores}
-\ck{data} \ct{Vec} (A : \ct{Set}) : $\N$ $\ra$ \ct{Set} \ck{where}\\
-\T \cc{$[]$}     : \ct{Vec} A \cc{zero}\\
-\T \cc{\_$::$\_} : {n : $\N$} $\ra$ A $\ra$ \ct{Vec} A n $\ra$ \ct{Vec} A (\cc{suc} n)
 \end{block}
 
 \pause
@@ -88,10 +95,14 @@
 
 \end{block}
 
+Esta la posibilidad de utilizar la función zip para introducir los dotted pattern.
+
 \end{frame}
 
 \begin{frame}
-\frametitle{Introducci\'on}
+\frametitle{Introducción a Agda}
+\framesubtitle{Funciones y valores (o pruebas)}
+
 
 \begin{block}{$\#$-filter}
 
@@ -105,7 +116,7 @@ $\ldots$ $|$ \cc{false} $=$ \cf{$\#$-filter} p xs
 
 \pause
 
-\begin{block}{filter}
+\begin{block}{Filter}
 
 \cf{filter} : \{A : \ct{Set}\} \{n : $\N$\} $\ra$\\
 \ \ \ \ \ \ \ \ \ (p : A $\ra$ \ct{Bool}) $\ra$ (xs : \ct{Vec} A n) $\ra$ \ct{Vec} A (\cf{$\#$-filter} p xs)\\
@@ -119,8 +130,21 @@ $\ldots$ $|$ \cc{false} $=$ \cf{filter} p xs
 \end{frame}
 
 \begin{frame}
+\frametitle{Introducción a Agda}
+\framesubtitle{Funciones y valores (o pruebas)}
 
-\begin{block}{filter mejorado}
+\begin{block}{Pares dependientes}\small
+
+Constructor del tipo: Dados tipos A : \ct{Set}, B : A $\ra$ \ct{Set} luego \\
+\T \T \T \T \ct{$\Sigma$[} x \ct{$\in$} A \ct{]} B x\\
+Constructor de valores: \cc{\_$,$\_}\\
+Eliminadores: \\
+\T - \cf{proj$_1$} : A\\
+\T - \cf{proj$_2$} : B \cf{proj$_1$}
+
+\end{block}
+
+\begin{block}{Filter mejorado}
 
 \cf{filterImproved} : \{A : \ct{Set}\} \{n : $\N$\} $\ra$\\
 \T \T \T \T \ \ (A $\ra$ \ct{Bool}) $\ra$ (\ct{Vec} A n) $\ra$ \ct{$\exists$} ($\lambda$ m $\ra$ \ct{Vec} A m)\\
@@ -134,6 +158,18 @@ $\ldots$ $|$ \cc{true} $=$ \ck{let} (n' \cc{$,$} xs') $=$ \cf{filterImproved} p 
 \end{frame}
 
 \begin{frame}
+\frametitle{Introducción a Agda}
+\framesubtitle{Funciones y valores (o pruebas)}
+
+\begin{block}{Naturales}
+
+\ck{data} \ct{\_$\leq$\_} : $\N$ $\ra$ $\N$ $\ra$ \ct{Set} \ck{where}\\
+\ \ \ \ \cc{z$\leq$n} : \{n : $\N$\}                 $\ra$ \cc{zero}  \ct{$\leq$} n\\
+\ \ \ \ \cc{s$\leq$s} : \{m n : $\N$\} $\ra$ (m$\leq$n : m \ct{$\leq$} n) $\ra$ \cc{suc} m \ct{$\leq$} \cc{suc} n
+
+\end{block}
+
+\pause
 
 \begin{block}{Propiedad sobre el orden de los naturales}
 
@@ -142,6 +178,12 @@ $\ldots$ $|$ \cc{true} $=$ \ck{let} (n' \cc{$,$} xs') $=$ \cf{filterImproved} p 
 \cf{prop$\leq$} (\cc{s$\leq$s} m$\leq$n) = \cc{s$\leq$s} (\cf{prop$\leq$} m$\leq$n)
 
 \end{block}
+
+\end{frame}
+
+\begin{frame}
+\frametitle{Introducción a Agda}
+\framesubtitle{Funciones y valores (o pruebas)}
 
 \begin{block}{filter mejorado y con prueba}
 

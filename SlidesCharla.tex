@@ -260,22 +260,22 @@
 \frametitle{Introducción a Agda}
 \framesubtitle{Tipos de datos}
 
-\begin{block}{Naturales}
-
-\ck{data} $\N$ : \ct{Set} \ck{where}\\
-\ \ \ \ \cc{zero} : $\N$\\
-\ \ \ \ \cc{suc}  : $\N$ $\ra$ $\N$
-
+\begin{block}{}
+Utilizando ejemplos presentemos las diferentes características que
+mencionamos, antes sobre los sistema de tipos dependientes, utilizando
+Agda y como estas nos permite expresar propiedades y diferentes tipos.
 \end{block}
 
 \pause
 
-\begin{block}{Suma de naturales}
+\begin{block}{}
+\begin{itemize}
 
-\cf{\_$+$\_} : $\N$ $\ra$ $\N$ $\ra$ $\N$\\
-\cc{zero}  \cf{$+$} n $=$ n\\
-\cc{suc} m \cf{$+$} n $=$ \cc{suc} (m \cf{$+$} n)
-
+\item Entender porque \textit{funciona} el \cf{head} presentado anteriormente.\\
+\item Presentar una implementación mas adecuada utilizando vectores.\\
+\item Implementar algunas cosas interesantes aprovechando la definición de los
+vectores.
+\end{itemize}
 \end{block}
 
 \end{frame}
@@ -284,42 +284,439 @@
 \frametitle{Introducción a Agda}
 \framesubtitle{Tipos de datos}
 
+\begin{block}{}
+Empecemos introduciendo las listas y los naturales.
+\end{block}
+
+\pause
+
+\begin{block}{Listas de A}
+
+\ck{data} \ct{List} (A : \ct{Set}) : \ct{Set} \ck{where}\\
+\T \cc{$[]$} : \ct{List} A\\
+\T \cc{$\_::\_$} : A $\ra$ \ct{List} A $\ra$ \ct{List} A
+
+\end{block}
+
+\pause
+
+\begin{block}{Naturales}
+
+\ck{data} $\N$ : \ct{Set} \ck{where}\\
+\T \cc{zero} : $\N$\\
+\T \cc{suc}  : $\N$ $\ra$ $\N$
+
+\end{block}
+
+\end{frame}
+
+\begin{frame}
+\begin{block}{}
+Recordando el tipo del \cf{head}:\\
+
+\
+
+\{A : \ct{Set}\} $\ra$ 
+(xs : \ct{List} A) $\ra$ \cc{zero} $<$ \cf{length} xs $\ra$ A\\
+
+\
+
+Podemos ver que tenemos definido ya los \ct{$\N$} y las \ct{List} A, solo 
+nos hace falta implementar el tipo $<$. Es interesante mencionar que para
+este tipo podemos empezar a pensar a los valores que se pueden construir
+como si fueran pruebas en el sentido matemático.
+\end{block}
+
+\pause
+
+\begin{block}{Orden entre naturales}
+
+\ck{data} \ct{\_$\leq$\_} : $\N$ $\ra$ $\N$ $\ra$ \ct{Set} \ck{where}\\
+\ \ \ \ \cc{z$\leq$n} : \{n : $\N$\}                 $\ra$ \cc{zero}  \ct{$\leq$} n\\
+\ \ \ \ \cc{s$\leq$s} : \{m n : $\N$\} $\ra$ (m$\leq$n : m \ct{$\leq$} n) $\ra$ \cc{suc} m \ct{$\leq$} \cc{suc} n
+
+\end{block}
+
+\pause
+
+\begin{block}{Orden estricto entre naturales}
+\cf{$\_<\_$} : $\N$ $\ra$ $\N$ $\ra$ \ct{Set}\\
+m \cf{$<$} n = \cc{suc} m \cf{$\leq$} n
+\end{block}
+
+\end{frame}
+
+\begin{frame}
+
+\begin{block}{Orden entre naturales}
+
+\ck{data} \ct{\_$\leq$\_} : $\N$ $\ra$ $\N$ $\ra$ \ct{Set} \ck{where}\\
+\ \ \ \ \cc{z$\leq$n} : \{n : $\N$\}                 $\ra$ \cc{zero}  \ct{$\leq$} n\\
+\ \ \ \ \cc{s$\leq$s} : \{m n : $\N$\} $\ra$ (m$\leq$n : m \ct{$\leq$} n) $\ra$ \cc{suc} m \ct{$\leq$} \cc{suc} n
+
+\end{block}
+
+\begin{block}{Orden estricto entre naturales}
+\cf{$\_<\_$} : $\N$ $\ra$ $\N$ $\ra$ \ct{Set}\\
+m \cf{$<$} n = \cc{suc} m \cf{$\leq$} n
+\end{block}
+
+\begin{block}{head en Agda}
+    \cf{head} : \{A : \ct{Set}\}  $\ra$ (xs : \ct{List} A) $\ra$ 
+    \cc{zero} $<$ \ct{length} xs $\rightarrow$ A \\
+    \pause
+    \cf{head} \cc{$[]$} p$_{[]}$ = ¿?\\
+    \cf{head} (x \cc{$::$} xs) p$_{::}$ = ¿?
+  \end{block}  
+
+\end{frame}
+
+\begin{frame}
+
+\begin{block}{Orden entre naturales}
+
+\ck{data} \ct{\_$\leq$\_} : $\N$ $\ra$ $\N$ $\ra$ \ct{Set} \ck{where}\\
+\ \ \ \ \cc{z$\leq$n} : \{n : $\N$\}                 $\ra$ \cc{zero}  \ct{$\leq$} n\\
+\ \ \ \ \cc{s$\leq$s} : \{m n : $\N$\} $\ra$ (m$\leq$n : m \ct{$\leq$} n) $\ra$ \cc{suc} m \ct{$\leq$} \cc{suc} n
+
+\end{block}
+
+\begin{block}{Orden estricto entre naturales}
+\cf{$\_<\_$} : $\N$ $\ra$ $\N$ $\ra$ \ct{Set}\\
+m \cf{$<$} n = \cc{suc} m \cf{$\leq$} n
+\end{block}
+
+\begin{block}{head en Agda}
+    \cf{head} : \{A : \ct{Set}\}  $\ra$ (xs : \ct{List} A) $\ra$ 
+    \cc{zero} $<$ \ct{length} xs $\rightarrow$ A \\
+    \cf{head} \cc{$[]$} p$_{[]}$ = ¿?\\
+    \cf{head} (x \cc{$::$} xs) p$_{::}$ = x
+  \end{block}  
+
+\pause
+
+\begin{block}{}
+Podemos preguntarnos que valores (o pruebas) podrían ser p$_{[]}$ y p$_{::}$
+\end{block}
+
+\end{frame}
+
+\begin{frame}
+
+\begin{block}{Orden entre naturales}
+
+\ck{data} \ct{\_$\leq$\_} : $\N$ $\ra$ $\N$ $\ra$ \ct{Set} \ck{where}\\
+\ \ \ \ \cc{z$\leq$n} : \{n : $\N$\}                 $\ra$ \cc{zero}  \ct{$\leq$} n\\
+\ \ \ \ \cc{s$\leq$s} : \{m n : $\N$\} $\ra$ (m$\leq$n : m \ct{$\leq$} n) $\ra$ \cc{suc} m \ct{$\leq$} \cc{suc} n
+
+\end{block}
+
+\begin{block}{Orden estricto entre naturales}
+\cf{$\_<\_$} : $\N$ $\ra$ $\N$ $\ra$ \ct{Set}\\
+m \cf{$<$} n = \cc{suc} m \cf{$\leq$} n
+\end{block}
+
+\begin{block}{head en Agda}
+    \cf{head} : \{A : \ct{Set}\}  $\ra$ (xs : \ct{List} A) $\ra$ 
+    \cc{zero} $<$ \ct{length} xs $\rightarrow$ A \\
+    \cf{head} \cc{$[]$} p$_{[]}$ = ¿?\\
+    \cf{head} (x \cc{$::$} xs) p$_{::}$ = x
+  \end{block}  
+
+\begin{block}{}
+El tipo de p$_{::}$ : \cc{zero} $<$ \ct{length} (x \cc{$::$} xs)
+\end{block}
+
+\end{frame}
+
+\begin{frame}
+
+\begin{block}{Orden entre naturales}
+
+\ck{data} \ct{\_$\leq$\_} : $\N$ $\ra$ $\N$ $\ra$ \ct{Set} \ck{where}\\
+\ \ \ \ \cc{z$\leq$n} : \{n : $\N$\}                 $\ra$ \cc{zero}  \ct{$\leq$} n\\
+\ \ \ \ \cc{s$\leq$s} : \{m n : $\N$\} $\ra$ (m$\leq$n : m \ct{$\leq$} n) $\ra$ \cc{suc} m \ct{$\leq$} \cc{suc} n
+
+\end{block}
+
+\begin{block}{Orden estricto entre naturales}
+\cf{$\_<\_$} : $\N$ $\ra$ $\N$ $\ra$ \ct{Set}\\
+m \cf{$<$} n = \cc{suc} m \cf{$\leq$} n
+\end{block}
+
+\begin{block}{head en Agda}
+    \cf{head} : \{A : \ct{Set}\}  $\ra$ (xs : \ct{List} A) $\ra$ 
+    \cc{zero} $<$ \ct{length} xs $\rightarrow$ A \\
+    \cf{head} \cc{$[]$} p$_{[]}$ = ¿?\\
+    \cf{head} (x \cc{$::$} xs) p$_{::}$ = x
+  \end{block}  
+
+\begin{block}{}
+El tipo de p$_{::}$ : \cc{zero} $<$ \cc{suc} (\cf{length} xs)
+\end{block}
+
+\end{frame}
+
+\begin{frame}
+
+\begin{block}{Orden entre naturales}
+
+\ck{data} \ct{\_$\leq$\_} : $\N$ $\ra$ $\N$ $\ra$ \ct{Set} \ck{where}\\
+\ \ \ \ \cc{z$\leq$n} : \{n : $\N$\}                 $\ra$ \cc{zero}  \ct{$\leq$} n\\
+\ \ \ \ \cc{s$\leq$s} : \{m n : $\N$\} $\ra$ (m$\leq$n : m \ct{$\leq$} n) $\ra$ \cc{suc} m \ct{$\leq$} \cc{suc} n
+
+\end{block}
+
+\begin{block}{Orden estricto entre naturales}
+\cf{$\_<\_$} : $\N$ $\ra$ $\N$ $\ra$ \ct{Set}\\
+m \cf{$<$} n = \cc{suc} m \cf{$\leq$} n
+\end{block}
+
+\begin{block}{head en Agda}
+    \cf{head} : \{A : \ct{Set}\}  $\ra$ (xs : \ct{List} A) $\ra$ 
+    \cc{zero} $<$ \ct{length} xs $\rightarrow$ A \\
+    \cf{head} \cc{$[]$} p$_{[]}$ = ¿?\\
+    \cf{head} (x \cc{$::$} xs) p$_{::}$ = x
+  \end{block}  
+
+\begin{block}{}
+El tipo de p$_{::}$ : \cc{suc} \cc{zero} $\leq$ \cc{suc} (\cf{length} xs)
+\end{block}
+
+\end{frame}
+
+\begin{frame}
+
+\begin{block}{Orden entre naturales}
+
+\ck{data} \ct{\_$\leq$\_} : $\N$ $\ra$ $\N$ $\ra$ \ct{Set} \ck{where}\\
+\ \ \ \ \cc{z$\leq$n} : \{n : $\N$\}                 $\ra$ \cc{zero}  \ct{$\leq$} n\\
+\ \ \ \ \cc{s$\leq$s} : \{m n : $\N$\} $\ra$ (m$\leq$n : m \ct{$\leq$} n) $\ra$ \cc{suc} m \ct{$\leq$} \cc{suc} n
+
+\end{block}
+
+\begin{block}{Orden estricto entre naturales}
+\cf{$\_<\_$} : $\N$ $\ra$ $\N$ $\ra$ \ct{Set}\\
+m \cf{$<$} n = \cc{suc} m \cf{$\leq$} n
+\end{block}
+
+\begin{block}{head en Agda}
+    \cf{head} : \{A : \ct{Set}\}  $\ra$ (xs : \ct{List} A) $\ra$ 
+    \cc{zero} $<$ \ct{length} xs $\rightarrow$ A \\
+    \cf{head} \cc{$[]$} p$_{[]}$ = ¿?\\
+    \cf{head} (x \cc{$::$} xs) p$_{::}$ = x
+  \end{block}  
+
+\begin{block}{}
+El tipo de p$_{::}$ = \cc{s$\leq$s} p'\\
+El tipo de p' : \cc{zero} $\leq$ \cf{length} xs
+\end{block}
+
+\end{frame}
+
+\begin{frame}
+
+\begin{block}{Orden entre naturales}
+
+\ck{data} \ct{\_$\leq$\_} : $\N$ $\ra$ $\N$ $\ra$ \ct{Set} \ck{where}\\
+\ \ \ \ \cc{z$\leq$n} : \{n : $\N$\}                 $\ra$ \cc{zero}  \ct{$\leq$} n\\
+\ \ \ \ \cc{s$\leq$s} : \{m n : $\N$\} $\ra$ (m$\leq$n : m \ct{$\leq$} n) $\ra$ \cc{suc} m \ct{$\leq$} \cc{suc} n
+
+\end{block}
+
+\begin{block}{Orden estricto entre naturales}
+\cf{$\_<\_$} : $\N$ $\ra$ $\N$ $\ra$ \ct{Set}\\
+m \cf{$<$} n = \cc{suc} m \cf{$\leq$} n
+\end{block}
+
+\begin{block}{head en Agda}
+    \cf{head} : \{A : \ct{Set}\}  $\ra$ (xs : \ct{List} A) $\ra$ 
+    \cc{zero} $<$ \ct{length} xs $\rightarrow$ A \\
+    \cf{head} \cc{$[]$} p$_{[]}$ = ¿?\\
+    \cf{head} (x \cc{$::$} xs) (\cc{s$\leq$s} \cc{zero}) = x
+  \end{block}  
+
+\pause
+
+\begin{block}{}
+¿Podremos hacer lo mismo ahora para p$_{[]}$ ?\\ \pause
+El tipo de p$_{[]}$ : \cc{zero} $<$ \ct{length} $[]$
+\end{block}
+
+\end{frame}
+
+\begin{frame}
+
+\begin{block}{Orden entre naturales}
+
+\ck{data} \ct{\_$\leq$\_} : $\N$ $\ra$ $\N$ $\ra$ \ct{Set} \ck{where}\\
+\ \ \ \ \cc{z$\leq$n} : \{n : $\N$\}                 $\ra$ \cc{zero}  \ct{$\leq$} n\\
+\ \ \ \ \cc{s$\leq$s} : \{m n : $\N$\} $\ra$ (m$\leq$n : m \ct{$\leq$} n) $\ra$ \cc{suc} m \ct{$\leq$} \cc{suc} n
+
+\end{block}
+
+\begin{block}{Orden estricto entre naturales}
+\cf{$\_<\_$} : $\N$ $\ra$ $\N$ $\ra$ \ct{Set}\\
+m \cf{$<$} n = \cc{suc} m \cf{$\leq$} n
+\end{block}
+
+\begin{block}{head en Agda}
+    \cf{head} : \{A : \ct{Set}\}  $\ra$ (xs : \ct{List} A) $\ra$ 
+    \cc{zero} $<$ \ct{length} xs $\rightarrow$ A \\
+    \cf{head} \cc{$[]$} p$_{[]}$ = ¿?\\
+    \cf{head} (x \cc{$::$} xs) (\cc{s$\leq$s} \cc{zero}) = x
+  \end{block}  
+
+\begin{block}{}
+El tipo de p$_{[]}$ : \cc{zero} $<$ \cc{zero}
+\end{block}
+
+\end{frame}
+
+\begin{frame}
+
+\begin{block}{Orden entre naturales}
+
+\ck{data} \ct{\_$\leq$\_} : $\N$ $\ra$ $\N$ $\ra$ \ct{Set} \ck{where}\\
+\ \ \ \ \cc{z$\leq$n} : \{n : $\N$\}                 $\ra$ \cc{zero}  \ct{$\leq$} n\\
+\ \ \ \ \cc{s$\leq$s} : \{m n : $\N$\} $\ra$ (m$\leq$n : m \ct{$\leq$} n) $\ra$ \cc{suc} m \ct{$\leq$} \cc{suc} n
+
+\end{block}
+
+\begin{block}{Orden estricto entre naturales}
+\cf{$\_<\_$} : $\N$ $\ra$ $\N$ $\ra$ \ct{Set}\\
+m \cf{$<$} n = \cc{suc} m \cf{$\leq$} n
+\end{block}
+
+\begin{block}{head en Agda}
+    \cf{head} : \{A : \ct{Set}\}  $\ra$ (xs : \ct{List} A) $\ra$ 
+    \cc{zero} $<$ \ct{length} xs $\rightarrow$ A \\
+    \cf{head} \cc{$[]$} p$_{[]}$ = ¿?\\
+    \cf{head} (x \cc{$::$} xs) (\cc{s$\leq$s} \cc{zero}) = x
+  \end{block}  
+
+\begin{block}{}
+El tipo de p$_{[]}$ : \cc{suc} \cc{zero} $\leq$ \cc{zero}
+\end{block}
+
+\end{frame}
+
+\begin{frame}
+
+\begin{block}{Orden entre naturales}
+
+\ck{data} \ct{\_$\leq$\_} : $\N$ $\ra$ $\N$ $\ra$ \ct{Set} \ck{where}\\
+\ \ \ \ \cc{z$\leq$n} : \{n : $\N$\}                 $\ra$ \cc{zero}  \ct{$\leq$} n\\
+\ \ \ \ \cc{s$\leq$s} : \{m n : $\N$\} $\ra$ (m$\leq$n : m \ct{$\leq$} n) $\ra$ \cc{suc} m \ct{$\leq$} \cc{suc} n
+
+\end{block}
+
+\begin{block}{Orden estricto entre naturales}
+\cf{$\_<\_$} : $\N$ $\ra$ $\N$ $\ra$ \ct{Set}\\
+m \cf{$<$} n = \cc{suc} m \cf{$\leq$} n
+\end{block}
+
+\begin{block}{head en Agda}
+    \cf{head} : \{A : \ct{Set}\}  $\ra$ (xs : \ct{List} A) $\ra$ 
+    \cc{zero} $<$ \ct{length} xs $\rightarrow$ A \\
+    \cf{head} \cc{$[]$} ()\\
+    \cf{head} (x \cc{$::$} xs) (\cc{s$\leq$s} \cc{zero}) = x
+\end{block}  
+
+\end{frame}
+
+\begin{frame}
+
+  \begin{block}{head en Agda}
+    \cf{head} : \{A : \ct{Set}\}  $\ra$ (xs : \ct{List} A) $\ra$ 
+    \cc{zero} $<$ \ct{length} xs $\rightarrow$ A \\
+    \cf{head} \cc{$[]$} ()\\
+    \cf{head} (x \cc{$::$} xs) $\_$ = x
+  \end{block}
+  
+\begin{block}{Pattern absurdo}
+
+El pattern absurdo nos permite decir que un caso nunca puede
+ocurrir cuando es imposible construir un valor del tipo requerido y por
+lo tanto nos salvamos de tener que dar una definición de la función
+para ese caso.
+
+\end{block}
+
+\end{frame}
+
+\begin{frame}
+
+\begin{block}{Replanteando el problema}
+Las listas funcionan muy bien para muchas cosas. Pero tal vez
+podamos crear un nuevo tipo de dato aprovechando el sistema de tipos
+de Agda de manera tal de tener un tipo lista que no solo lleve la
+información acerca del tipo de los elementos, si no además de su
+tamaño.\\
+
+De esta manera podemos definir un \cf{head} nuevo que no necesite
+ninguna prueba para ser \textit{usado}.
+\end{block}
+
+\pause
+
 \begin{block}{Vectores}
+
 \ck{data} \ct{Vec} (A : \ct{Set}) : $\N$ $\ra$ \ct{Set} \ck{where}\\
 \pause
 \T \cc{$[]$}     : \ct{Vec} A \cc{zero}\\
 \pause
 \T \cc{\_$::$\_} : \{n : $\N$\} $\ra$ A $\ra$ \ct{Vec} A n $\ra$ \ct{Vec} A (\cc{suc} n)
-\end{block}
-
-\pause
-
-\begin{block}{Producto}
-
-\ck{data} \ct{\_$\times$\_} (A B : \ct{Set}) : \ct{Set} \ck{where}\\
-\ \ \ \ \cc{\_$,$\_} : A $\ra$ B $\ra$ A \ct{$\times$} B
 
 \end{block}
-
-\pause
-
-\begin{block}{Zip}
-
-\cf{zip} : \{A B : \ct{Set}\} \{n : $\N$\} $\ra$ 
-\ct{Vec} A n $\ra$ \ct{Vec} B n $\ra$ \ct{Vec} (A \ct{$\times$} B) n\\
-\cf{zip} \cc{$[]$} \cc{$[]$} $=$ \cc{$[]$}\\
-\cf{zip} (a \cc{$::$} vas) (b \cc{$::$} vbs) $=$ (a \cc{$,$} b) \cc{$::$} (\cf{zip} vas vbs)
-
-\end{block}
-
-Esta la posibilidad de utilizar la función zip para introducir los dotted pattern.
 
 \end{frame}
+
+\begin{frame}
+
+\begin{block}{Vectores}
+
+\ck{data} \ct{Vec} (A : \ct{Set}) : $\N$ $\ra$ \ct{Set} \ck{where}\\
+\T \cc{$[]$}     : \ct{Vec} A \cc{zero}\\
+\T \cc{\_$::$\_} : \{n : $\N$\} $\ra$ A $\ra$ \ct{Vec} A n $\ra$ \ct{Vec} A (\cc{suc} n)
+
+\end{block}
+
+\begin{block}{Reimplementando el head}
+Podemos pensar ahora como utilizar el tipo vector para realizar una
+nueva implementación del \cf{head}
+\end{block}
+
+\pause
+
+\begin{block}{head en Agda utilizando vectores}
+    \cf{head} : \{A : \ct{Set}\} \{n : $\N$\} $\ra$ \ct{Vec} A (\cc{suc} n) $\ra$ A \\
+    \pause
+    \cf{head} (x \cc{$::$} xs) = x
+\end{block}
+
+\pause
+
+\begin{block}{}
+¿Donde quedo el caso de pattern matching para la lista vacia, \cc{$[]$}?;
+Para resolver esta pregunta, prestemos atención al tipo de este constructor.
+\end{block}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%% Hasta acá voy %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%% Hasta acá voy %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%% Hasta acá voy %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 \begin{frame}
 \frametitle{Introducción a Agda}
 \framesubtitle{Funciones y valores (o pruebas)}
 
+\begin{block}{}
+Aprovechando la implementación de los vectores podemos implementar distintas
+funciones nuevas.
+\end{block}
 
 \begin{block}{$\#$-filter}
 
@@ -352,8 +749,10 @@ $\ldots$ $|$ \cc{false} $=$ \cf{filter} p xs
 
 \begin{block}{Pares dependientes}\small
 
-Constructor del tipo: Dados tipos A : \ct{Set}, B : A $\ra$ \ct{Set} luego \\
-\T \T \T \T \ct{$\Sigma$[} x \ct{$\in$} A \ct{]} B x\\
+Constructor del tipo:\\ 
+Dados tipos A : \ct{Set}, B : A $\ra$ \ct{Set} luego
+\ct{$\Sigma$[} x \ct{$\in$} A \ct{]} B x 
+(o \ct{$\exists$} ($\lambda$ x $\ra$ B x))\\
 Constructor de valores: \cc{\_$,$\_}\\
 Eliminadores: \\
 \T - \cf{proj$_1$} : A\\
@@ -361,15 +760,21 @@ Eliminadores: \\
 
 \end{block}
 
-\begin{block}{Filter mejorado}
+\pause
+
+\begin{block}{Filter mejorado}\small
 
 \cf{filterImproved} : \{A : \ct{Set}\} \{n : $\N$\} $\ra$\\
 \T \T \T \T \ \ (A $\ra$ \ct{Bool}) $\ra$ (\ct{Vec} A n) $\ra$ \ct{$\exists$} ($\lambda$ m $\ra$ \ct{Vec} A m)\\
-\cf{filterImproved} p \cc{$[]$} $=$ (\cc{zero} \cc{$,$} \cc{$[]$})\\
+\cf{filterImproved} p \cc{$[]$} $=$ \pause (\cc{zero} \cc{$,$} \cc{$[]$})\\
+
+\pause
+
 \cf{filterImproved} p (x \cc{$::$} xs) \ck{with} p x\\
 $\ldots$ $|$ \cc{false} $=$ \cf{filterImproved} p xs\\
 $\ldots$ $|$ \cc{true} $=$ \ck{let} (n' \cc{$,$} xs') $=$ \cf{filterImproved} p xs\\
 \T \T \T  \ \ck{in} (\cc{suc} n' \cc{$,$} x \cc{$::$} xs')
+
 \end{block}
 
 \end{frame}

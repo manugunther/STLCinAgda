@@ -417,10 +417,10 @@
 
   
 \end{frame}
+
+\section{Introducción a Agda}
  
 \begin{frame}
-\frametitle{Introducción a Agda}
-\framesubtitle{Tipos de datos}
 
 \begin{block}{}
 Utilizando ejemplos presentemos las diferentes características que
@@ -443,8 +443,6 @@ vectores.
 \end{frame}
 
 \begin{frame}
-\frametitle{Introducción a Agda}
-\framesubtitle{Tipos de datos}
 
 \begin{block}{}
 Empecemos introduciendo las listas y los naturales.
@@ -483,8 +481,7 @@ Recordando el tipo del \cf{head}:\\
 
 \
 
-Podemos ver que tenemos definido ya los \ct{$\N$} y las \ct{List} A, solo 
-nos hace falta implementar el tipo $<$. Es interesante mencionar que para
+Nos falta definir el tipo $<$. Es interesante mencionar que para
 este tipo podemos empezar a pensar a los valores que se pueden construir
 como si fueran pruebas en el sentido matemático.
 \end{block}
@@ -860,15 +857,12 @@ nueva implementación del \cf{head}
 \pause
 
 \begin{block}{}
-¿Donde quedó el caso de pattern matching para la lista vacia, \cc{$[]$}?;
-Para resolver esta pregunta, prestemos atención al tipo de este constructor.
+¿Donde quedó el caso de pattern matching para la lista vacia, \cc{$[]$}?
 \end{block}
 
 \end{frame}
 
 \begin{frame}
-\frametitle{Introducción a Agda}
-\framesubtitle{Funciones y valores (o pruebas)}
 
 \begin{block}{}
 Aprovechando la implementación de los vectores podemos implementar distintas
@@ -925,8 +919,6 @@ $\ldots$ $|$ \cc{false} $=$ \cf{filter} p xs
 \end{frame}
 
 \begin{frame}
-\frametitle{Introducción a Agda}
-\framesubtitle{Funciones y valores (o pruebas)}
 
 \begin{block}{}
 Ahora bien, se puede ver que calcular \cf{$\#$-filter} y \cf{filter} se
@@ -941,7 +933,7 @@ nos permiten realizar una implementación mejorada.
 
 Constructor del tipo:\\ 
 Dados tipos A : \ct{Set}, B : A $\ra$ \ct{Set} luego
-\ct{$\Sigma$[} x \ct{$\in$} A \ct{]} B x 
+\ct{$\Sigma$[} x \ct{$\in$} A \ct{]} B
 (o \ct{$\exists$} ($\lambda$ x $\ra$ B x))\\
 Constructor de valores: \cc{\_$,$\_}\\
 Eliminadores: \\
@@ -984,8 +976,6 @@ $\ldots$ $|$ \cc{true} $=$ \ck{let} (n' \cc{$,$} xs') $=$ \cf{filterImproved} p 
 
 
 \begin{frame}
-\frametitle{Introducción a Agda}
-\framesubtitle{Funciones y valores (o pruebas)}
 
 \begin{block}{}
 Ahora que tenemos definido el filter utilizando pares dependientes surge
@@ -1010,8 +1000,6 @@ podemos definir una propiedad que nos servirá mas adelante.
 \end{frame}
 
 \begin{frame}
-\frametitle{Introducción a Agda}
-\framesubtitle{Funciones y valores (o pruebas)}
 
 \begin{block}{}
 Recordando el tipo que nos determinaba un orden entre el tipo de los naturales,
@@ -1037,8 +1025,6 @@ podemos definir una propiedad que nos servirá mas adelante.
 \end{frame}
 
 \begin{frame}
-\frametitle{Introducción a Agda}
-\framesubtitle{Funciones y valores (o pruebas)}
 
 \begin{block}{}
 Haciendo uso del tipo producto (no dependiente) podemos retornar además
@@ -1070,7 +1056,25 @@ $\ldots$ $|$ \cc{true}  $|$ (n' \cc{$,$} xs' \cc{$,$} m$\leq$n) =
 
 \end{frame}
 
+\begin{frame}
 
+\begin{block}{}
+Vimos que podemos especificar propiedades deseables en el tipo resultante, podemos
+pensar entonces en especificar una poscondición que especifique exactamente la función
+que queremos implementar. Así por ejemplo pensando en el filter podemos escribir el siguiente
+tipo para su función.
+\end{block}
+
+\begin{block}{Filter con especificación}
+-- Falta
+\cf{filter} : \{A : \ct{Set}\} \{n : $\N$\} $\ra$
+(A $\ra$ \ct{Bool}) $\ra$ (\ct{Vec} A n) $\ra$\\
+\T \T \T \T \ \ 
+\ct{$\exists$} ($\lambda$ m $\ra$ \ct{Vec} A m \ct{$\times$} m \ct{$\leq$} n)\\
+
+\end{block}
+
+\end{frame}
 
 \end{document}
 

@@ -8,6 +8,8 @@
 \usepackage{xcolor}
 \usepackage{MnSymbol}
 
+\usepackage{bussproofs} 
+
 \newcommand{\cf}[1]{\textcolor{blue}{#1}}
 \newcommand{\ct}[1]{\textcolor{blue}{#1}}
 \newcommand{\cc}[1]{\textcolor{ForestGreen}{#1}}
@@ -31,7 +33,7 @@
 
 \begin{document}
 \beamertemplatenavigationsymbolsempty
-\title{Creando un mundo mejor con Agda}
+\title{Programación certificada con lenguajes con tipos dependientes}
 \author{{Alejandro Gadea, Emmanuel Gunther}\\
 \vspace*{0.5cm}}
 \date{14 de Noviembre de 2014}
@@ -145,8 +147,8 @@
   \pause
   
   \begin{block}{}
-   Surge como una teoría fundacional de la matemática. Es alternativa a la clásica teoría de conjuntos que 
-   estudiamos en matemática.
+   Surge como una teoría fundacional de la matemática. Es alternativa a la clásica teoría de conjuntos que
+   conocemos.
   \end{block}  
 
   \pause
@@ -190,6 +192,12 @@
      \end{align*}
     \end{block}
     
+    \pause
+    
+    \begin{block}{}
+     Si no es necesario saber a qué nivel pertenece un tipo, simplemente escribimos $U$ para referirnos al universo.
+    \end{block}
+    
 \end{frame}
 
 
@@ -213,9 +221,8 @@
     el constructor $\lambda\,(\tjud{x}{A}).E$
     \item El \textbf{eliminador} en las funciones es la \textbf{aplicación}:
       \begin{align*}
-        (\lambda\,x.E)\,a\;\equiv\;E'
+        (\lambda\,x.E)\,a\;\equiv\;E\,[x \longrightarrow a]
       \end{align*}
-     donde $E'$ es igual a $E$ reemplazando $x$ por $a$.
    \end{itemize}
 
   \end{block}
@@ -252,10 +259,165 @@
       \end{itemize}
     \end{block}
     
+    \pause
+    
+    \begin{block}{}
+     Observemos que con un elemento de $\depFun{a}{A}{B}$ se puede obtener un elemento de $B\,a$ \textbf{para cada}
+     $\tjud{a}{A}$.
+    \end{block}
 
 \end{frame}
 
+\begin{frame}
+    \begin{block}{Producto}
+      \begin{itemize}
+       \item Dados dos tipos $\tjud{A}{U}$ y $\tjud{B}{U}$, introducimos el tipo $\tjud{\cprod{A}{B}}{U}$, al cual comunmente llamamos
+             \textit{producto cartesiano}. 
+       \item A partir de dos elementos $\tjud{a}{A}$ y $\tjud{b}{B}$, podemos construir el elemento $\tjud{(a,b)}{\cprod{A}{B}}$ del producto
+       cartesiano.
+       \item Los eliminadores del producto obtienen un elemento de $A$ o uno de $B$ a partir de $\tjud{\cprod{A}{B}}{U}$:
+            \begin{align*}
+              &\tjud{pr_1}{\cprod{A}{B} \rightarrow A}\\
+              &pr_1\,(a,b)\,=\,a\\              
+              &\tjud{pr_2}{\cprod{A}{B} \rightarrow B}\\
+              &pr_2\,(a,b)\,=\,b\\
+            \end{align*}
+      \end{itemize}
+    \end{block}
+\end{frame}
 
+\begin{frame}
+    \begin{block}{}
+     De la misma forma que generalizamos las funciones, podemos generalizar el producto:
+    \end{block}
+    
+    \pause
+    
+    \begin{block}{Pares dependientes}
+      \begin{itemize}
+       \item Dados un tipo $\tjud{A}{U}$ y una familia $\tjud{B}{A \rightarrow U}$ definimos el tipo de pares dependientes
+              \begin{align*}
+              \depPair{a}{A}{B}
+              \end{align*}
+       \item El constructor y los eliminadores son los mismos que para el producto, solo que teniendo en cuenta que el tipo
+             del segundo elemento de un par depende del primer elemento.
+      \end{itemize}
+    \end{block}
+    \pause
+    \begin{block}{}
+     Observemos que para poder construir un elemento de $\depPair{a}{A}{B}$ debe \textbf{existir} un $\tjud{a}{A}$.
+    \end{block}
+
+\end{frame}
+
+\begin{frame}
+    \begin{block}{}
+     Otros tipos importantes que definimos son los siguientes:
+    \end{block}
+    
+    \pause
+    
+    \begin{block}{}
+      \begin{itemize}
+       \item \textbf{Coproducto}. A partir $\tjud{A}{U}$, $\tjud{B}{U}$, se define el tipo $\tjud{A + B}{U}$. Podemos representar
+                                  la unión disjunta de dos tipos.
+      \pause
+      
+       \item \textbf{Tipo vacío}. El tipo que no contiene ningún elemento. Lo notamos con $\bot$. 
+       \pause
+       \item \textbf{Tipo unario}. El tipo que tiene exactamente un elemento. Lo notamos con $\top$.
+      \end{itemize}
+    \end{block}
+\end{frame}
+
+\begin{frame}
+    \begin{block}{}
+     Podemos observar una analogía entre los tipos que definimos previamente y los conectivos de la lógica proposicional:
+    \end{block}
+    
+    \pause
+    
+    \begin{block}{Reglas para el $\wedge$}
+      \AxiomC{$p$}
+      \AxiomC{$q$}
+      \LeftLabel{Introducción de $\wedge$:}
+      \BinaryInfC{$p \wedge q$}
+      \DisplayProof
+      \quad
+      \AxiomC{$p \wedge q$}
+      \LeftLabel{Eliminación de $\wedge$:}
+      \UnaryInfC{$p$}
+      \DisplayProof
+      \quad
+      \AxiomC{$p \wedge q$}
+      \UnaryInfC{$q$}
+      \DisplayProof
+    \end{block}
+    
+    \pause
+    
+    \begin{block}{Reglas del producto}
+      \AxiomC{$\tjud{a}{A}$}
+      \AxiomC{$\tjud{b}{B}$}
+      \BinaryInfC{$\tjud{(a,b)}{\cprod{A}{B}}$}
+      \DisplayProof
+      \quad
+      \AxiomC{$\tjud{t}{\cprod{A}{B}}$}
+      \UnaryInfC{$\tjud{pr_1\,t}{A}$}
+      \DisplayProof
+      \quad
+      \AxiomC{$\tjud{t}{\cprod{A}{B}}$}
+      \UnaryInfC{$\tjud{pr_2\,t}{B}$}
+      \DisplayProof
+    \end{block}
+    
+\end{frame}
+
+\begin{frame}
+ \begin{block}{}
+  Podemos hacer la misma correspondencia con el resto de los conectivos:
+ \end{block}
+
+ \pause
+ 
+ \begin{block}{Lógica proposicional y teoría de tipos}
+  \begin{itemize}
+  \item $\mathbf{True}$ se corresponde con $\mathbf{\top}$.
+  \item $\mathbf{False}$ se corresponde con $\mathbf{\bot}$.
+  \item $\mathbf{A \wedge B}$ se corresponde con $\cprod{A}{B}$.
+  \item $\mathbf{A \vee B}$ se corresponde con $A + B$.
+  \item $\mathbf{A \Rightarrow B}$ se corresponde con $A \rightarrow B$.
+  \item $\mathbf{A \Leftrightarrow B}$ se corresponde con $\cprod{(A \rightarrow B)}{(B \rightarrow A)}$.
+  \item $\mathbf{\neg A}$ se corresponde con $A \rightarrow \mathbf{\bot}$.
+\end{itemize}
+ \end{block}
+
+\end{frame}
+
+\begin{frame}
+  \begin{block}{}
+    Con la lógica de predicados tenemos la siguiente correspondencia:
+  \end{block}
+  
+  \pause
+  
+  \begin{block}{Lógica de predicados y teoría de tipos}
+   \begin{itemize}
+    \item ($\forall x$, $P\,x$) se corresponde con $\depFun{x}{A}{P}$.
+    \item ($\exists x$, $P\,x$) se corresponde con $\depPair{x}{A}{P}$.
+    \end{itemize}
+  \end{block}
+
+  \pause
+  
+  \begin{block}{}
+   Gracias a esta correspondencia podemos tener un lenguaje de programación con un sistema
+   de tipos que permita expresar proposiciones lógicas.
+  \end{block}
+
+  
+\end{frame}
+ 
 \begin{frame}
 \frametitle{Introducción a Agda}
 \framesubtitle{Tipos de datos}

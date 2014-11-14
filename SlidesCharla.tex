@@ -704,11 +704,6 @@ Para resolver esta pregunta, prestemos atención al tipo de este constructor.
 
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%% Hasta acá voy %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%% Hasta acá voy %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%% Hasta acá voy %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
 \begin{frame}
 \frametitle{Introducción a Agda}
 \framesubtitle{Funciones y valores (o pruebas)}
@@ -716,6 +711,13 @@ Para resolver esta pregunta, prestemos atención al tipo de este constructor.
 \begin{block}{}
 Aprovechando la implementación de los vectores podemos implementar distintas
 funciones nuevas.
+\end{block}
+
+\pause
+
+\begin{block}{}
+Por ejemplo la función que nos retorna la cantidad de elementos de un vector
+que cumplen una cierta propiedad.
 \end{block}
 
 \begin{block}{$\#$-filter}
@@ -728,9 +730,26 @@ $\ldots$ $|$ \cc{false} $=$ \cf{$\#$-filter} p xs
 
 \end{block}
 
-\pause
+\end{frame}
 
-\begin{block}{Filter}
+\begin{frame}
+
+\begin{block}{$\#$-filter}\small
+
+\cf{$\#$-filter} : \{A : \ct{Set}\} \{n : $\N$\} $\ra$ (A $\ra$ \ct{Bool}) $\ra$ \ct{Vec} A n $\ra$ $\N$\\
+\cf{$\#$-filter} p \cc{$[]$} $=$ \cc{zero}\\
+\cf{$\#$-filter} p (x \cc{$::$} xs) \ck{with} p x\\
+$\ldots$ $|$ \cc{true}  $=$ \cc{suc} (\cf{$\#$-filter} p xs)\\
+$\ldots$ $|$ \cc{false} $=$ \cf{$\#$-filter} p xs
+
+\end{block}
+
+\begin{block}{}\small
+Teniendo en cuenta esta función, nos podemos contruir el \cf{filter} sobre los vectores. Donde
+la complicación podría estar en conocer el tamaño del vector resultante.
+\end{block}
+
+\begin{block}{Filter}\small
 
 \cf{filter} : \{A : \ct{Set}\} \{n : $\N$\} $\ra$\\
 \ \ \ \ \ \ \ \ \ (p : A $\ra$ \ct{Bool}) $\ra$ (xs : \ct{Vec} A n) $\ra$ \ct{Vec} A (\cf{$\#$-filter} p xs)\\
@@ -747,6 +766,14 @@ $\ldots$ $|$ \cc{false} $=$ \cf{filter} p xs
 \frametitle{Introducción a Agda}
 \framesubtitle{Funciones y valores (o pruebas)}
 
+\begin{block}{}
+Ahora bien, considerando que puede ser un problema obtener el tamaño
+del vector resultante, tal vez exista un tipo tal que podamos \textit{calcularlo}
+durante el filtrado.
+\end{block}
+
+\pause
+
 \begin{block}{Pares dependientes}\small
 
 Constructor del tipo:\\ 
@@ -760,20 +787,52 @@ Eliminadores: \\
 
 \end{block}
 
-\pause
+\end{frame}
+
+\begin{frame}
+
+\begin{block}{Pares dependientes}\small
+
+Constructor del tipo:\\ 
+Dados tipos A : \ct{Set}, B : A $\ra$ \ct{Set} luego
+\ct{$\Sigma$[} x \ct{$\in$} A \ct{]} B x 
+(o \ct{$\exists$} ($\lambda$ x $\ra$ B x))\\
+Constructor de valores: \cc{\_$,$\_}\\
+Eliminadores: \\
+\T - \cf{proj$_1$} : A\\
+\T - \cf{proj$_2$} : B \cf{proj$_1$}
+
+\end{block}
 
 \begin{block}{Filter mejorado}\small
 
 \cf{filterImproved} : \{A : \ct{Set}\} \{n : $\N$\} $\ra$\\
 \T \T \T \T \ \ (A $\ra$ \ct{Bool}) $\ra$ (\ct{Vec} A n) $\ra$ \ct{$\exists$} ($\lambda$ m $\ra$ \ct{Vec} A m)\\
-\cf{filterImproved} p \cc{$[]$} $=$ \pause (\cc{zero} \cc{$,$} \cc{$[]$})\\
-
-\pause
-
+\cf{filterImproved} p \cc{$[]$} $=$ (\cc{zero} \cc{$,$} \cc{$[]$})\\
 \cf{filterImproved} p (x \cc{$::$} xs) \ck{with} p x\\
 $\ldots$ $|$ \cc{false} $=$ \cf{filterImproved} p xs\\
 $\ldots$ $|$ \cc{true} $=$ \ck{let} (n' \cc{$,$} xs') $=$ \cf{filterImproved} p xs\\
 \T \T \T  \ \ck{in} (\cc{suc} n' \cc{$,$} x \cc{$::$} xs')
+
+\end{block}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Introducción a Agda}
+\framesubtitle{Funciones y valores (o pruebas)}
+
+\begin{block}{}
+Ahora que tenemos definido el filter utilizando pares dependientes surge
+la pregunta; ¿podremos especificar alguna propiedad mas en el tipo resultante?
+\end{block}
+
+\begin{block}{Naturales}
+
+\ck{data} \ct{\_$\leq$\_} : $\N$ $\ra$ $\N$ $\ra$ \ct{Set} \ck{where}\\
+\ \ \ \ \cc{z$\leq$n} : \{n : $\N$\}                 $\ra$ \cc{zero}  \ct{$\leq$} n\\
+\ \ \ \ \cc{s$\leq$s} : \{m n : $\N$\} $\ra$ (m$\leq$n : m \ct{$\leq$} n) $\ra$ \cc{suc} m \ct{$\leq$} \cc{suc} n
 
 \end{block}
 
@@ -791,6 +850,11 @@ $\ldots$ $|$ \cc{true} $=$ \ck{let} (n' \cc{$,$} xs') $=$ \cf{filterImproved} p 
 
 \end{block}
 
+\begin{block}{}
+Recordando el tipo que nos determinaba un orden entre el tipo de los naturales,
+podemos definir una propiedad que nos servirá mas adelante.
+\end{block}
+
 \pause
 
 \begin{block}{Propiedad sobre el orden de los naturales}
@@ -802,6 +866,11 @@ $\ldots$ $|$ \cc{true} $=$ \ck{let} (n' \cc{$,$} xs') $=$ \cf{filterImproved} p 
 \end{block}
 
 \end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%% Por acá voy %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%% Por acá voy %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%% Por acá voy %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
 \frametitle{Introducción a Agda}

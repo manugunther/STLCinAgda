@@ -929,9 +929,10 @@ $\ldots$ $|$ \cc{false} $=$ \cf{filter} p xs
 \framesubtitle{Funciones y valores (o pruebas)}
 
 \begin{block}{}
-Ahora bien, considerando que puede ser un problema obtener el tamaño
-del vector resultante, tal vez exista un tipo tal que podamos \textit{calcularlo}
-durante el filtrado.
+Ahora bien, se puede ver que calcular \cf{$\#$-filter} y \cf{filter} se
+podría hacer al mismo tiempo. Solo necesitamos un tipo lo suficientemente
+expresivo para poder construir valores, veamos como los pares dependientes
+nos permiten realizar una implementación mejorada.
 \end{block}
 
 \pause
@@ -970,6 +971,7 @@ Eliminadores: \\
 
 \cf{filterImproved} : \{A : \ct{Set}\} \{n : $\N$\} $\ra$\\
 \T \T \T \T \ \ (A $\ra$ \ct{Bool}) $\ra$ (\ct{Vec} A n) $\ra$ \ct{$\exists$} ($\lambda$ m $\ra$ \ct{Vec} A m)\\
+\pause
 \cf{filterImproved} p \cc{$[]$} $=$ (\cc{zero} \cc{$,$} \cc{$[]$})\\
 \cf{filterImproved} p (x \cc{$::$} xs) \ck{with} p x\\
 $\ldots$ $|$ \cc{false} $=$ \cf{filterImproved} p xs\\
@@ -990,6 +992,13 @@ Ahora que tenemos definido el filter utilizando pares dependientes surge
 la pregunta; ¿podremos especificar alguna propiedad mas en el tipo resultante?
 \end{block}
 
+\pause
+
+\begin{block}{}
+Recordando el tipo que nos determinaba un orden entre el tipo de los naturales,
+podemos definir una propiedad que nos servirá mas adelante.
+\end{block}
+
 \begin{block}{Naturales}
 
 \ck{data} \ct{\_$\leq$\_} : $\N$ $\ra$ $\N$ $\ra$ \ct{Set} \ck{where}\\
@@ -1004,6 +1013,11 @@ la pregunta; ¿podremos especificar alguna propiedad mas en el tipo resultante?
 \frametitle{Introducción a Agda}
 \framesubtitle{Funciones y valores (o pruebas)}
 
+\begin{block}{}
+Recordando el tipo que nos determinaba un orden entre el tipo de los naturales,
+podemos definir una propiedad que nos servirá mas adelante.
+\end{block}
+
 \begin{block}{Naturales}
 
 \ck{data} \ct{\_$\leq$\_} : $\N$ $\ra$ $\N$ $\ra$ \ct{Set} \ck{where}\\
@@ -1011,13 +1025,6 @@ la pregunta; ¿podremos especificar alguna propiedad mas en el tipo resultante?
 \ \ \ \ \cc{s$\leq$s} : \{m n : $\N$\} $\ra$ (m$\leq$n : m \ct{$\leq$} n) $\ra$ \cc{suc} m \ct{$\leq$} \cc{suc} n
 
 \end{block}
-
-\begin{block}{}
-Recordando el tipo que nos determinaba un orden entre el tipo de los naturales,
-podemos definir una propiedad que nos servirá mas adelante.
-\end{block}
-
-\pause
 
 \begin{block}{Propiedad sobre el orden de los naturales}
 
@@ -1029,22 +1036,23 @@ podemos definir una propiedad que nos servirá mas adelante.
 
 \end{frame}
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%% Por acá voy %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%% Por acá voy %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%% Por acá voy %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 \begin{frame}
 \frametitle{Introducción a Agda}
 \framesubtitle{Funciones y valores (o pruebas)}
 
+\begin{block}{}
+Haciendo uso del tipo producto (no dependiente) podemos retornar además
+del vector filtrado, una prueba de que el tamaño de este nuevo vector
+no será mayor que el tamaño del vector original.
+\end{block}
+
 \begin{block}{filter mejorado y con prueba}
 
-\cf{filterImproved'} : \{A : \ct{Set}\} \{n : $\N$\} $\ra$\\
-\T \T \T \T \ \ 
+\cf{filterImproved'} : \{A : \ct{Set}\} \{n : $\N$\} $\ra$
 (A $\ra$ \ct{Bool}) $\ra$ (\ct{Vec} A n) $\ra$\\
 \T \T \T \T \ \ 
 \ct{$\exists$} ($\lambda$ m $\ra$ \ct{Vec} A m \ct{$\times$} m \ct{$\leq$} n)\\
+\pause
 \cf{filterImproved'} p \cc{$[]$} $=$ (\cc{zero} \cc{$,$} \cc{$[]$} \cc{$,$} \cc{z$\leq$n})\\
 \cf{filterImproved'} p (x \cc{$::$} xs) \ck{with} p x $|$ \cf{filterImproved'} p xs\\
 $\ldots$ $|$ \cc{false} $|$ (n' \cc{$,$} xs' \cc{$,$} m$\leq$n) = 
@@ -1054,7 +1062,15 @@ $\ldots$ $|$ \cc{true}  $|$ (n' \cc{$,$} xs' \cc{$,$} m$\leq$n) =
 
 \end{block}
 
+\begin{block}{Propiedad sobre el orden de los naturales}
+
+\cf{prop$\leq$} : \{m n : $\N$\} $\ra$ m \ct{$\leq$} n $\ra$ m \cf{prop$\leq$} \cc{suc} n\\
+
+\end{block}
+
 \end{frame}
+
+
 
 \end{document}
 

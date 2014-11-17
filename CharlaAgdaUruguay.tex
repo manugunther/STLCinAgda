@@ -284,7 +284,7 @@
 
   \begin{block}{Lógica de predicados y teoría de tipos}
    \begin{itemize}
-    \item ($\forall x$, $P\,x$) se corresponde con $(\tjud{x}{A} \rightarrow P\,x$.
+    \item ($\forall x$, $P\,x$) se corresponde con $(\tjud{x}{A}) \rightarrow P\,x$.
     \item ($\exists x$, $P\,x$) se corresponde con $\depPair{x}{A}{P}$.
     \end{itemize}
   \end{block}
@@ -699,14 +699,10 @@ para ese caso.
 \begin{frame}
 
 \begin{block}{Replanteando el problema}
-Las listas funcionan muy bien para muchas cosas. Pero tal vez
-podamos crear un nuevo tipo de dato aprovechando el sistema de tipos
-de Agda de manera tal de tener un tipo lista que no solo lleve la
-información acerca del tipo de los elementos, sino además de su
-tamaño.\\
 
-De esta manera podemos definir un \cf{head} nuevo que no necesite
-ninguna prueba para ser \textit{usado}.
+En vez de tener listas de cualquier tamaño y asegurar
+que no son vacías para usar la función \cf{head}, podríamos
+tener listas de tamaño fijo, a las que llamamos \textbf{vectores}.
 \end{block}
 
 \pause
@@ -753,5 +749,48 @@ nueva implementación del \cf{head}
 \end{block}
 
 \end{frame}
+
+\begin{frame}
+ 
+ \begin{block}{Conclusiones}
+  \begin{itemize}
+  \pause
+  
+   \item Sistemas de tipos fuertes agregan expresividad a los lenguajes de programación
+    permitiendo eliminar errores en etapas tempranas del desarrollo.
+    
+   \pause
+    
+   \item Agda implementa un sistema de tipos que permite tener una analogía entre la lógica y los 
+   tipos de datos.
+   
+   \pause
+   
+   \item El chequeo de tipos en estos lenguajes es más complejo ya que requiere normalizar expresiones.
+   
+   \pause
+   
+   \item Mediante el tipo de un programa se pueden expresar pre y post condiciones, como en el ejemplo
+   del \cf{head}.
+  \end{itemize}
+
+ \end{block}
+
+ \pause
+ 
+ \begin{block}{}
+  Como ejemplo de un programa no trivial certificado, implementamos inferencia de tipos para una versión del cálculo
+  lambda simplemente tipado en Agda.
+ \end{block}
+
+ 
+\end{frame}
+
+\begin{frame}{}
+\begin{center}
+ \Huge Fin.
+\end{center}
+\end{frame}
+
 
 \end{document}

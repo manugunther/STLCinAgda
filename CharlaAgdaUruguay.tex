@@ -4,9 +4,9 @@
 \usecolortheme[named=blue]{structure}
 %%%% packages y comandos personales %%%%
 \usepackage[utf8]{inputenc}
-% \usepackage{latexsym,amsmath,amssymb} % S\'imbolos
+\usepackage{latexsym,amsmath,amssymb} % S\'imbolos
 % \usepackage{xcolor}
-% \usepackage{MnSymbol}
+\usepackage{MnSymbol}
 
 \usepackage{bussproofs} 
 
@@ -300,32 +300,12 @@
 
 
 \section{Introducción a Agda}
- 
-\begin{frame}
-
-\begin{block}{}
-Utilizando ejemplos presentemos las diferentes características que
-mencionamos antes sobre los sistema de tipos dependientes, utilizando
-Agda y cómo éstas nos permite expresar propiedades y diferentes tipos.
-\end{block}
-
-\pause
-
-\begin{block}{}
-\begin{itemize}
-
-\item Entender por qué \textit{funciona} el \cf{head} presentado anteriormente.\\
-\item Presentar una implementación más adecuada utilizando vectores.\\
-\item Implementar algunas cosas interesantes aprovechando la definición de los
-vectores.
-\end{itemize}
-\end{block}
-
-\end{frame}
 
 \begin{frame}
 
 \begin{block}{}
+Utilizando el ejemplo del \cf{head} presentemos algunas de las diferentes características
+que mencionamos anteriormente sobre los sistemas de tipos dependientes utilizando Agda.
 Empecemos introduciendo las listas y los naturales.
 \end{block}
 
@@ -436,12 +416,12 @@ m \cf{$<$} n = \cc{suc} m \cf{$\leq$} n
 \pause
 
 \begin{block}{}
-Podemos preguntarnos que valores (o pruebas) podrían ser p$_{[]}$ y p$_{::}$
+Podemos preguntarnos que valores (o pruebas) pueden ser p$_{[]}$ y p$_{::}$
 \end{block}
 
 \end{frame}
 
-\begin{frame}
+\begin{frame}[shrink=5]
 
 \begin{block}{Orden entre naturales}
 
@@ -464,7 +444,9 @@ m \cf{$<$} n = \cc{suc} m \cf{$\leq$} n
   \end{block}  
 
 \begin{block}{}
-El tipo de p$_{::}$ : \cc{zero} $<$ \ct{length} (x \cc{$::$} xs)
+El tipo de p$_{::}$ : \cc{zero} $<$ \ct{length} (x \cc{$::$} xs) \pause
+(Notar que como podemos tener valores en los tipos ocurre que para que estos tipos
+sean chequeados tenemos que \textit{computar} estos valores.)
 \end{block}
 
 \end{frame}
@@ -548,7 +530,7 @@ m \cf{$<$} n = \cc{suc} m \cf{$\leq$} n
   \end{block}  
 
 \begin{block}{}
-El tipo de p$_{::}$ = \cc{s$\leq$s} p'\\
+El valor de p$_{::}$ = \cc{s$\leq$s} p'\\
 El tipo de p' : \cc{zero} $\leq$ \cf{length} xs
 \end{block}
 
@@ -573,7 +555,36 @@ m \cf{$<$} n = \cc{suc} m \cf{$\leq$} n
     \cf{head} : \{A : \ct{Set}\}  $\ra$ (xs : \ct{List} A) $\ra$ 
     \cc{zero} $<$ \ct{length} xs $\rightarrow$ A \\
     \cf{head} \cc{$[]$} p$_{[]}$ = ¿?\\
-    \cf{head} (x \cc{$::$} xs) (\cc{s$\leq$s} \cc{zero}) = x
+    \cf{head} (x \cc{$::$} xs) p$_{::}$ = x
+  \end{block}  
+
+\begin{block}{}
+El valor de p$_{::}$ = \cc{s$\leq$s} p'\\
+El valor de p' = \cc{z$\leq$n}
+\end{block}
+
+\end{frame}
+
+\begin{frame}
+
+\begin{block}{Orden entre naturales}
+
+\ck{data} \ct{\_$\leq$\_} : $\N$ $\ra$ $\N$ $\ra$ \ct{Set} \ck{where}\\
+\ \ \ \ \cc{z$\leq$n} : \{n : $\N$\}                 $\ra$ \cc{zero}  \ct{$\leq$} n\\
+\ \ \ \ \cc{s$\leq$s} : \{m n : $\N$\} $\ra$ (m$\leq$n : m \ct{$\leq$} n) $\ra$ \cc{suc} m \ct{$\leq$} \cc{suc} n
+
+\end{block}
+
+\begin{block}{Orden estricto entre naturales}
+\cf{$\_<\_$} : $\N$ $\ra$ $\N$ $\ra$ \ct{Set}\\
+m \cf{$<$} n = \cc{suc} m \cf{$\leq$} n
+\end{block}
+
+\begin{block}{head en Agda}
+    \cf{head} : \{A : \ct{Set}\}  $\ra$ (xs : \ct{List} A) $\ra$ 
+    \cc{zero} $<$ \ct{length} xs $\rightarrow$ A \\
+    \cf{head} \cc{$[]$} p$_{[]}$ = ¿?\\
+    \cf{head} (x \cc{$::$} xs) (\cc{s$\leq$s} \cc{z$\leq$n}) = x
   \end{block}  
 
 \pause
@@ -604,7 +615,7 @@ m \cf{$<$} n = \cc{suc} m \cf{$\leq$} n
     \cf{head} : \{A : \ct{Set}\}  $\ra$ (xs : \ct{List} A) $\ra$ 
     \cc{zero} $<$ \ct{length} xs $\rightarrow$ A \\
     \cf{head} \cc{$[]$} p$_{[]}$ = ¿?\\
-    \cf{head} (x \cc{$::$} xs) (\cc{s$\leq$s} \cc{zero}) = x
+    \cf{head} (x \cc{$::$} xs) (\cc{s$\leq$s} \cc{z$\leq$n}) = x
   \end{block}  
 
 \begin{block}{}
@@ -632,7 +643,7 @@ m \cf{$<$} n = \cc{suc} m \cf{$\leq$} n
     \cf{head} : \{A : \ct{Set}\}  $\ra$ (xs : \ct{List} A) $\ra$ 
     \cc{zero} $<$ \ct{length} xs $\rightarrow$ A \\
     \cf{head} \cc{$[]$} p$_{[]}$ = ¿?\\
-    \cf{head} (x \cc{$::$} xs) (\cc{s$\leq$s} \cc{zero}) = x
+    \cf{head} (x \cc{$::$} xs) (\cc{s$\leq$s} \cc{z$\leq$n}) = x
   \end{block}  
 
 \begin{block}{}
@@ -660,7 +671,7 @@ m \cf{$<$} n = \cc{suc} m \cf{$\leq$} n
     \cf{head} : \{A : \ct{Set}\}  $\ra$ (xs : \ct{List} A) $\ra$ 
     \cc{zero} $<$ \ct{length} xs $\rightarrow$ A \\
     \cf{head} \cc{$[]$} ()\\
-    \cf{head} (x \cc{$::$} xs) (\cc{s$\leq$s} \cc{zero}) = x
+    \cf{head} (x \cc{$::$} xs) (\cc{s$\leq$s} \cc{z$\leq$n}) = x
 \end{block}  
 
 \end{frame}
@@ -743,162 +754,4 @@ nueva implementación del \cf{head}
 
 \end{frame}
 
-\begin{frame}
-
-  \begin{block}{}
-  Aprovechando la implementación de los vectores podemos implementar distintas
-  funciones nuevas.
-  \end{block}
-
-  \pause
-
-  \begin{block}{}
-  Recordemos la función \cf{filter}:
-  \end{block}
-
-  \begin{exampleblock}{función filter}
-    \cf{filter} toma una colección de elementos $c$ de algún tipo A y un predicado sobre A, y retorna
-    una colección con los elementos de $c$ que satisfacen el predicado.
-  \end{exampleblock}
-
-  \pause
-  
-  \begin{block}{}
-    Queremos implementar \cf{filter} sobre el tipo de los vectores. Primero definamos una función
-    que retorne la cantidad de elementos que satisfacen el predicado:
-  \end{block}
-  
-\end{frame}
-
-\begin{frame}
-
-  \begin{block}{$\#$-filter}\small
-
-  \cf{$\#$-filter} : \{A : \ct{Set}\} \{n : $\N$\} $\ra$ (A $\ra$ \ct{Bool}) $\ra$ \ct{Vec} A n $\ra$ $\N$\\
-  \cf{$\#$-filter} p \cc{$[]$} $=$ \cc{zero}\\
-  \cf{$\#$-filter} p (x \cc{$::$} xs) \ck{with} p x\\
-  $\ldots$ $|$ \cc{true}  $=$ \cc{suc} (\cf{$\#$-filter} p xs)\\
-  $\ldots$ $|$ \cc{false} $=$ \cf{$\#$-filter} p xs
-  \end{block}
-  
-  \pause
-  
-  \begin{block}{}
-    Luego podemos definir el filter:
-  \end{block}
-
-  \pause
-
-  \begin{block}{Filter}\small
-
-  \cf{filter} : \{A : \ct{Set}\} \{n : $\N$\} $\ra$\\
-  \ \ \ \ \ \ \ \ \ (p : A $\ra$ \ct{Bool}) $\ra$ (xs : \ct{Vec} A n) $\ra$ \ct{Vec} A (\cf{$\#$-filter} p xs)\\
-  \cf{filter} p \cc{$[]$} $=$ \cc{$[]$}\\
-  \cf{filter} p (x \cc{$::$} xs) \ck{with} p x\\
-  $\ldots$ $|$ \cc{true}  $=$ x \cc{$::$} (\cf{filter} p xs)\\
-  $\ldots$ $|$ \cc{false} $=$ \cf{filter} p xs
-
-  \end{block}
-
-\end{frame}
-
-\begin{frame}
-
-\begin{block}{}
-Ahora bien, se puede ver que calcular \cf{$\#$-filter} y \cf{filter} se
-podría hacer al mismo tiempo. Solo necesitamos un tipo lo suficientemente
-expresivo para poder construir valores, veamos como los pares dependientes
-nos permiten realizar una implementación mejorada.
-\end{block}
-
-\pause
-
-\begin{block}{Pares dependientes}\small
-
-Constructor del tipo:\\ 
-Dados tipos A : \ct{Set}, B : A $\ra$ \ct{Set} podemos construir el tipo
-\ct{$\Sigma$[} x \ct{$\in$} A \ct{]} B\\
-Constructor de valores: \cc{\_$,$\_}\\
-Eliminadores: \\
-\T - \cf{proj$_1$} : \ct{$\Sigma$[} x \ct{$\in$} A \ct{]} B $\ra$ A\\
-\T - \cf{proj$_2$} : \ct{$\Sigma$[} x \ct{$\in$} A \ct{]} B $\ra$ B x\\
-
-\end{block}
-
-\pause
-
-\begin{block}{}
- A este tipo también se lo puede escribir \ct{$\exists$} ($\lambda$ x $\ra$ B x)
-\end{block}
-
-
-\end{frame}
-
-\begin{frame}
-
-\begin{block}{Filter mejorado}\small
-
-\cf{filterImproved} : \{A : \ct{Set}\} \{n : $\N$\} $\ra$\\
-\T \T \T \T \ \ (A $\ra$ \ct{Bool}) $\ra$ (\ct{Vec} A n) $\ra$ \ct{$\exists$} ($\lambda$ m $\ra$ \ct{Vec} A m)\\
-\pause
-\cf{filterImproved} p \cc{$[]$} $=$ (\cc{zero} \cc{$,$} \cc{$[]$})\\
-\cf{filterImproved} p (x \cc{$::$} xs) \ck{with} p x\\
-$\ldots$ $|$ \cc{false} $=$ \cf{filterImproved} p xs\\
-$\ldots$ $|$ \cc{true} $=$ \ck{let} (n' \cc{$,$} xs') $=$ \cf{filterImproved} p xs\\
-\T \T \T  \ \ck{in} (\cc{suc} n' \cc{$,$} x \cc{$::$} xs')
-
-\end{block}
-
-\end{frame}
-
-
-\begin{frame}
-
-\begin{block}{}
-  ¿Podremos especificar alguna propiedad más en el tipo resultante?
-\end{block}
-
-\pause
-
-  \begin{block}{}
-    Redefinamos el tipo del filter, agregando una ``postcondición'' más: El tamaño
-    del vector resultante debe tener a lo sumo tantos elementos como el original
-  \end{block}
-  
-  \pause
-
-  \begin{block}{filter mejorado y con prueba}
-
-  \cf{filterImproved'} : \{A : \ct{Set}\} \{n : $\N$\} $\ra$
-  (A $\ra$ \ct{Bool}) $\ra$ (\ct{Vec} A n) $\ra$\\
-  \T \T \T \T \ \ 
-  \ct{$\exists$} ($\lambda$ m $\ra$ \ct{Vec} A m \ct{$\times$} m \ct{$\leq$} n)\\
-  \pause
-  \cf{filterImproved'} p \cc{$[]$} $=$ (\cc{zero} \cc{$,$} \cc{$[]$} \cc{$,$} \cc{z$\leq$n})\\
-  \cf{filterImproved'} p (x \cc{$::$} xs) \ck{with} p x $|$ \cf{filterImproved'} p xs\\
-  $\ldots$ $|$ \cc{false} $|$ (n' \cc{$,$} xs' \cc{$,$} m$\leq$n) = 
-  (n' \cc{$,$} xs' \cc{$,$} \cf{prop$\leq$} m$\leq$n)\\
-  $\ldots$ $|$ \cc{true}  $|$ (n' \cc{$,$} xs' \cc{$,$} m$\leq$n) = 
-  (\cc{suc} n' , x \cc{$::$} xs' , \cc{s$\leq$s} m$\leq$n)
-
-  \end{block}
-  
-\end{frame}
-
-\begin{frame}
-
-\begin{block}{}
-  Creemos que esta implementación es correcta, pero el tipo de la función no asegura que cumpla
-  con la especificación que detallamos.
-  
-  Podemos redefinirla con el siguiente tipo:
-\end{block}
-
-\begin{block}{Filter con especificación}
-  Lo mostramos en Agda.
-\end{block}
-
-\end{frame}
-
 \end{document}
-

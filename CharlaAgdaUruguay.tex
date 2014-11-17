@@ -366,7 +366,7 @@ m \cf{$<$} n = \cc{suc} m \cf{$\leq$} n
 
 \end{frame}
 
-\begin{frame}
+\begin{frame}[shrink=5]
 
 \begin{block}{Orden entre naturales}
 
@@ -387,7 +387,13 @@ m \cf{$<$} n = \cc{suc} m \cf{$\leq$} n
     \pause
     \cf{head} \cc{$[]$} p$_{[]}$ = ¿?\\
     \cf{head} (x \cc{$::$} xs) p$_{::}$ = ¿?
-  \end{block}  
+\end{block}  
+
+\begin{block}{}
+Es importante mencionar que en Agda todas las funciones deben
+ser totales. Por lo tanto para el caso del \cf{head} tenemos
+que considerar los dos casos de pattern matching; \cc{$[]$} y \cc{$::$}.
+\end{block}
 
 \end{frame}
 

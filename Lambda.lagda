@@ -203,96 +203,27 @@ para el cálculo lambda simplemente tipado asegurando su corrección.
 
 \section{Teoría de tipos}
 
-En esta sección daremos un vistazo a las bases de la teoría de tipos de Martin Löf, basándonos
-en primer capítulo del libro (cita a homotopy types).
-
-\subsection{Teoría de tipos vs. Teoría de conjuntos}
+Los sistemas de tipos más complejos que permiten expresar propiedades
+sobre los programas se basan en la \textbf{teoría de tipos}. En ésta los tipos no son meros
+representantes para conjuntos de elementos como en la mayoría de los lenguajes de programación, 
+sino que proveen un poder expresivo más grande.
+\medskip
 
 La teoría de tipos es una teoría fundacional de la matemática, alternativa a la de conjuntos de Zermelo-Fraenkel.
-Difiere de esta última en algunos aspectos importantes:
+El concepto principal en la teoría es el de \textbf{tipo}, el cual puede representar un conjunto de elementos
+o también una proposición lógica. En este último caso, los elementos de un tipo serán pruebas de que la misma
+es válida. 
 
-\begin{itemize}
-  \item En la teoría de conjuntos podemos identificar dos ``capas'': El sistema deductivo de la lógica de primer orden
-        y, dentro de este sistema, los axiomas de una teoría particular como la de Zermelo-Fraenkel.
-        
-        En la teoría de tipos no tenemos esta distinción, la teoría \textbf{es} su propio sistema deductivo. En 
-        lugar de tener dos nociones como ``conjuntos'' y ``proposiciones'', tiene solo una: los \textbf{tipos}.
-        
-  \item En el sistema deductivo de la teoría de conjuntos tenemos un solo tipo de juicios: Una proposición tiene una prueba. Las
-        reglas para construir estos juicios son del estilo ``A partir de $A$ y $B$ se infiere $A \wedge B$''. Un juicio
-        (``$A$ tiene una prueba'') existe a un nivel distinto al de una proposición en sí misma ($A$).
-        
-        En teoría de tipos el análogo a ``$A$ tiene una prueba'' es ``$a\,:\,A$'' ($a$ tiene tipo $A$). Si consideramos que el tipo
-        $A$ representa una proposición, luego $a$ es la prueba que hace a la proposición $A$ cierta. De esta forma
-        la teoría de tipos es un sistema \textbf{constructivista}, ya que para probar la validez de una propiedad se debe
-        encontrar el testigo que la hace cierta.
-        
-  \item Si bien un juicio de tipado ``$a\,:\,A$'' puede interpretarse como que $a$ es la prueba de cierta proposición $A$, también
-        puede ser considerado como el análogo a ``$a \in A$'' de la teoría de conjuntos, es decir, considerar al tipo $A$ como un conjunto
-        de elementos. Sin embargo hay una diferencia esencial en el hecho de que ``$a\,:\,A$'' es un juicio, mientras que ``$a \in A$''
-        es una proposición. En particular, en la teoría de tipos no podemos construir proposiciones del tipo ``si $a\,:\,A$ luego ...''
-        La existencia de $a$ sólo puede considerarse dentro de un tipo, y no por sí solo, ya que cada elemento por su propia naturaleza
-        debe tener un tipo. En cambio en la teoría de conjuntos esto no es así.
-        
-  \item Una última diferencia a considerar es el concepto de \text{igualdad}. La noción de igualdad usual en matemática es considerarla
-        una proposición. Dado que en la teoría de tipos las proposiciones son tipos, luego la igualdad también será un tipo. Dados 
-        dos elementos $a\,:\,A$, $b\,:\,A$, tenemos el tipo $a\,=_{A}\,b$. Si existe un elemento del tipo $a\,=_{A}\,b$, luego tenemos
-        que $a$ y $b$ son proposicionalmente iguales.
-        
-        Sin embargo en la teoría de tipos también tenemos otro tipo de igualdad, la igualdad por definición (o judgmental equality), la cual
-        existe al mismo nivel que un juicio de tipado. Si definimos una función $f\,:\,\mathds{N} \rightarrow \mathds{N}$ mediante
-        la ecuación $f(x)\,=\,x^2$, luego la expresión $f(3)$ es igual a $3^2$ \textbf{por definición}. Esta igualdad es algorítmicamente
-        decidible y el chequeo es parte de la meta-teoría.
-        
-\end{itemize}
+En la teoría de tipos un elemento $x$ no puede existir en sí mismo si no es dentro de un tipo. Por lo tanto no se puede 
+expresar algo como ``sea $x$ tal que cumple alguna propiedad", sino que $x$ debe introducirse junto con algún tipo: 
+$\tjud{x}{A}$ significa que $x$ es un elemento de tipo $A$.
 
-\subsection{Tipos funcionales}
+\subsection{Universos}
 
-Dados dos tipos $A$ y $B$ se puede construir un tipo $A \rightarrow B$ que representa funciones con dominio
-en $A$ y codominio en $B$. Las funciones son un concepto primitivo en la teoría de tipos.
-
-Dada una función $\tjud{f}{A \rightarrow B}$ y un elemento $\tjud{a}{A}$, luego se puede \textit{aplicar} la función
-$f$ a $a$, lo cual notamos con $f\,a$ y cuyo tipo es $\tjud{f\,a}{B}$.
-
-Para construir elementos de un tipo funcional $A \rightarrow B$ se puede realizar una definición o utilizar la abstracción lambda. La
-definición
-\begin{align*}
-  f\,x\,=\,\Phi
-\end{align*}
-
-donde $x$ es una variable y $\Phi$ una expresión que puede contener a $x$, es válida si se chequea que $\tjud{\Phi}{B}$ 
-asumiendo $\tjud{x}{A}$.
-
-La misma definición mediante la abstracción lambda sería:
-\begin{align*}
-  \lambda\,(\tjud{x}{A}).\Phi
-\end{align*}
-
-\noindent que cumple el juicio $\tjud{\lambda\,(\tjud{x}{A}).\Phi}{A \rightarrow B}$ bajo las mismas condiciones detalladas previamente
-sobre $x$ y $\Phi$. A partir de que la expresión tiene tipo $A \rightarrow B$, el tipo de la variable $x$ puede inferirse, por lo
-cual podemos omitir ponerlo explícitamente.
-
-Con la definición de funciones se introduce una \textbf{regla de computación}, la cual es una igualdad por definición (judgmental equality):
-\begin{align*}
-  (\lambda\,x.\Phi)\,a\;\equiv\;\Phi'
-\end{align*}
-
-\noindent donde $\Phi'$ es igual a $\Phi$ en la cual todas las ocurrencias de $x$ son reemplazadas por $a$.
-
-Otra regla que se introduce es la también conocida como \textbf{regla Eta}. Dado que tenemos definida una función 
-$\tjud{f}{A \rightarrow B}$, se da la siguiente igualdad por definición:
-\begin{align*}
-  f \equiv \lambda\,x.f\,x
-\end{align*}
-
-\subsection{Universos y familias}
-
-Como dijimos previamente, en teoría de tipos un elemento no existe en sí mismo si no que debe tener un tipo. Por lo tanto
-¿qué son los tipos mismos? Un tipo $A$ también deberá tener un tipo. Usualmente se utiliza el término \textbf{universo}
-para referir al tipo cuyos elementos son tipos. Esto podría dar lugar a una paradoja, ya que si tenemos un tipo que contiene
-a todos los tipos, en particular se contendría a sí mismo, y esto da lugar a una paradoja.
-
-Para evitar la paradoja se introduce una jerarquía en los universos
+Puesto que un elemento no puede existir si no es dentro de un tipo, podríamos plantearnos qué son los tipos mismos. 
+Un tipo $A$ también deberá tener algún tipo. Usualmente se utiliza el término \textbf{universo}.
+para referir al tipo cuyos elementos son tipos. Esto podría dar lugar a una 
+paradoja (ya que el tipo que contenga a todos los tipos en particular debería contenerse a sí mismo) y para evitarla se introduce una jerarquía en los universos:
 \begin{align*}
   \tjud{U_0}{\tjud{U_1}{\tjud{U_2}{...}}}
 \end{align*}
@@ -301,13 +232,69 @@ Para evitar la paradoja se introduce una jerarquía en los universos
 Si no es necesario conocer a qué nivel de universo explícitamente pertenece un tipo, se lo suele omitir anotando simplemente   
 $\tjud{A}{U}$.
 
-Notemos entonces que podríamos tener una función que a partir de un valor de algún tipo retorne no un valor sino un tipo.
-A este tipo de funciones se las suele llamar también \textbf{familia de tipos}:
+\subsection{Definición de tipos}
+
+La teoría se construye en base a la definición de tipos. Para introducir un nuevo tipo se debe especificar lo siguiente:
+
+\begin{itemize}
+  \item \textbf{reglas de formación}, que definen la manera en que se forma el tipo (bajo qué condiciones
+       se puede formar).
+  \item \textbf{constructores}, que definen cómo construir elementos del tipo que se está definiendo.
+  \item \textbf{eliminadores}, los cuales representan cómo usar los elementos del tipo. Un eliminador 
+        será un objeto que permite descomponer al tipo en otros tipos.
+  \item \textbf{regla de computación}, que corresponde a la definición del eliminador, es decir, expresa cómo 
+       un eliminador actúa sobre un constructor.
+  \item \textbf{principio de unicidad} opcional, que permite expresar para algunos tipos que todo elemento
+       está únicamente determinado por los resultados de aplicar eliminadores y que luego puede ser
+       reconstruido a partir de esos resultados aplicando un constructor (puede pensarse como el dual de la regla
+       de computación).
+\end{itemize}
+
+Para introducir entonces un nuevo tipo especificaremos al menos sus reglas de formación, sus constructores y 
+sus eliminadores junto con las reglas de computación.
+
+\subsection{Funciones}
+
+\textbf{Regla de formación}:
+Dados dos tipos $A$ y $B$ se puede construir un tipo $A \rightarrow B$ que representa funciones con dominio
+en $A$ y codominio en $B$. Las funciones son un concepto primitivo en la teoría de tipos.
+\smallskip
+
+\textbf{Constructor}:
+Para construir elementos de un tipo funcional $A \rightarrow B$ se puede realizar una definición o utilizar la abstracción lambda. La
+definición
 \begin{align*}
-  \tjud{B}{A \rightarrow U}
+  f\,x\,=\,E
 \end{align*}
 
-\noindent Si se aplica $B$ a algún valor de tipo $A$, se obtiene un tipo.
+\noindent donde $x$ es una variable y $E$ una expresión que puede contener a $x$, es válida si se chequea que $\tjud{E}{B}$ 
+asumiendo $\tjud{x}{A}$.
+
+La misma definición mediante la abstracción lambda sería:
+\begin{align*}
+  \lambda\,(\tjud{x}{A}).E
+\end{align*}
+
+\noindent que cumple el juicio $\tjud{\lambda\,(\tjud{x}{A}).E}{A \rightarrow B}$ bajo las mismas condiciones detalladas previamente
+sobre $x$ y $E$. A partir de que la expresión tiene tipo $A \rightarrow B$, el tipo de la variable $x$ puede inferirse, por lo
+cual podemos omitir ponerlo explícitamente.
+\smallskip
+
+\textbf{Eliminador}:
+Dada una función $\tjud{f}{A \rightarrow B}$ y un elemento $\tjud{a}{A}$, luego se puede \textit{aplicar} la función
+$f$ a $a$, lo cual notamos con $f\,a$ y cuyo tipo es $\tjud{f\,a}{B}$.
+
+Con la definición de funciones se introduce una \textbf{regla de computación}:
+\begin{align*}
+  (\lambda\,x.E)\,a\;\equiv\;E [x \longrightarrow a]
+\end{align*}
+
+\textbf{Unicidad}:
+Otra regla que se introduce es la también conocida como \textbf{regla Eta}. Dado que tenemos definida una función 
+$\tjud{f}{A \rightarrow B}$, se da la siguiente igualdad por definición:
+\begin{align*}
+  f \equiv \lambda\,x.f\,x
+\end{align*}
 
 \subsection{Funciones dependientes}
 
@@ -330,26 +317,17 @@ Notemos que si pensamos a los tipos como proposiciones, y consideramos que una p
 el tipo que la representa tiene un elemento, el tipo de la función $f$ representa que \textit{para todo $\tjud{x}{A}$
 vale $B\,x$}.
 
-\subsection{Definición de tipos de datos}
+\subsection{Familias de tipos}
 
-La teoría de tipos se construye mediante definiciones de tipos de datos. Para definir cualquier tipo
-se debe especificar:
+Podríamos tener una función que tome un valor de un tipo $A$ y retorne un elemento de $U$, es decir, que retorne
+a su vez un tipo. A estas funciones se las suele llamar \textbf{familia de tipos}:
+\begin{align*}
+  \text{Dado } \tjud{A}{U} \text{, podemos definir }\tjud{B}{A \rightarrow U}
+\end{align*}
 
-\begin{itemize}
-  \item \textbf{reglas de formación}, que definen la manera en que se forma el tipo (por ejemplo
-       se puede formar el tipo $A \rightarrow B$ a partir de $\tjud{A}{U}$ y $\tjud{B}{U}$.
-  \item \textbf{constructores}, que definen cómo construir elementos del tipo que se está definiendo (un constructor
-       es en general una función cuyo codominio es el tipo de dato a definir).
-  \item \textbf{eliminadores}, los cuales representan cómo usar los elementos del tipo (por ejemplo la aplicación
-       es el eliminador en el tipo de las funciones). Un eliminador es en general una función que toma entre
-       sus parámetros un elemento del tipo y retorna algo de otro tipo.
-  \item \textbf{regla de computación}, que corresponde a la definición del eliminador, es decir, expresa cómo 
-       un eliminador actúa sobre un constructor.
-  \item \textbf{principio de unicidad} opcional, que permite expresar para algunos tipos que todo elemento
-       del tipo está únicamente determinado por los resultados de aplicar eliminadores y que luego puede ser
-       reconstruido a partir de esos resultados aplicando un constructor (puede pensarse como el dual de la regla
-       de computación, que para las funciones se corresponde con la regla eta).
-\end{itemize}
+\noindent Si se aplica $B$ a algún valor de tipo $A$, se obtiene un tipo.
+
+\subsection{Otros tipos de datos}
 
 Veremos como ejemplo algunos tipos de datos de la teoría de tipos:
 \medskip
@@ -459,7 +437,7 @@ del tipo $\mathbf{1}$ será una función $\tjud{g}{C \rightarrow \mathbf{1} \rig
 
 \subsection{Proposiciones como tipos}
 
-Cuando revisamos las diferencias entre la teoría de conjuntos y la teoría de tipos, vimos que podemos tener una analogía entre
+En la introducción de esta sección vimos que podemos tener una analogía entre
 las proposiciones lógicas y los tipos. Si un tipo representa una proposición, la misma será válida si se encuentra un elemento
 del tipo. Tenemos entonces una correspondencia entre la lógica constructivista y un lenguaje de programación con tipos de datos
 con las características que vimos previamente. Esta correspondencia fue observada por primera vez por Haskell Curry y William
@@ -504,7 +482,7 @@ menciones a la sección anterior, y por lo tanto una introducción para quien
 se esté iniciando en la programación en Agda. Por otro lado, si el lector
 conoce conceptos como; tipos de datos, pattern matching, funciones dependientes,
 familias de tipos de datos, sentencia \verb|with|, argumentos implícitos,
-dotted patterns, etc. Una opción puede ser dirigirse directo a la sección
+dotted patterns, etc. una opción puede ser dirigirse directo a la sección
 siguiente.
 
 Es importante mencionar que todos los ejemplos fueron compilados con
@@ -571,8 +549,7 @@ como anteriormente realizamos en Haskell.
 
 Empecemos introduciendo la forma de declarar tipos de datos
 \textit{como los de Haskell}. Podemos definir el tipo \verb|Nat| de los 
-números naturales de la siguiente manera
-
+números naturales de la siguiente manera:
 \begin{verbatim}
 
 data Nat : Set where
@@ -580,7 +557,6 @@ data Nat : Set where
   suc  : Nat → Nat
 
 \end{verbatim}
-
 \verb|Nat| tendrá el tipo \verb|Set|, que representa el tipo de los tipos de datos
 (en la sección 2 le llamamos $U$) y sus constructores serán \verb|zero| y \verb|suc|, 
 mediante los cuales podemos obtener elementos del tipo que estamos definiendo.
@@ -680,7 +656,7 @@ y en \verb|mapToNat| estamos fijando el tipo \verb|B|.
 
 \subsection{Familias de tipos de datos}
 
-Veamos ahora como podemos definir familia de tipos indexadas implementando el
+Veamos ahora cómo podemos definir familia de tipos indexadas implementando el
 tipo de los vectores de un cierto tipo y tamaño
 
 \begin{verbatim}
@@ -711,19 +687,17 @@ head (const x _) = x
 
 \end{verbatim}
 
-es importante notar que la condición de exhaustividad del checkeador de tipos
+Es importante notar que la condición de exhaustividad del checkeador de tipos
 se cumple ya que no existe otra forma de construir algo de tipo \verb|Vec A (suc n)|
 que no sea con el constructor \verb|const|.
 
-\subsection{Mas sobre pattern matching}
+\subsection{Más sobre pattern matching}
 
 \subsubsection{Dotted patterns}
 Consideremos la función \verb|zip| sobre vectores que dados dos vectores
-de igual tamaño nos construye un vector de pares. Donde es importante
-notar la restricción interesante que impone el hecho de que los vectores
-sean de igual tamaño, el \verb|zip| implementado sobre listas permite
-realizarlo sobre listas de distinto tamaño generando el probable recorte
-de elementos al no tener estos con quien emparejarse. 
+de igual tamaño nos construye un vector de pares. El tipo \verb|Vec| nos permite
+agregar la restricción de que el tamaño de los vectores sea el mismo (a diferencia
+de la implementación de \verb|zip| con listas, donde no podríamos tener esta restricción).
 
 \begin{verbatim}
 
@@ -738,7 +712,7 @@ aplicado \verb|zip| a dos vectores es \verb|A × B|, este tipo
 se corresponde con el producto cartesiano definido en \comment{referencia
 a la sección 2.5}.
 
-Podemos pensar ahora que ocurre si hacemos pattern matching en el 
+Podemos pensar ahora qué ocurre si hacemos pattern matching en el 
 argumento \verb|n : Nat| en el segundo caso
 
 \begin{verbatim}
@@ -747,12 +721,12 @@ zip {n = (suc n)} (const {ma} a as) (const {mb} b bs) = ...
 
 \end{verbatim}
 
-es importante mencionar que, teniendo en cuenta la igualdad que se encuentra 
+Es importante mencionar que, teniendo en cuenta la igualdad que se encuentra 
 entre llave en uno de los casos de pattern matching, el \verb|n| del 
-lado izquiero se refiere al nombre de variable
+lado izquierdo se refiere al nombre de variable
 del tipo y el \verb|n| del lado derecho es una variable fresca donde hacer
 pattern matching, cada vez que hablemos de \verb|n| nos referiremos a este
-ultimo. Ahora bien, este \verb|n| debería ser (y lo es) el único tamaño posible
+último. Ahora bien, este \verb|n| debería ser (y lo es) el único tamaño posible
 de las listas \verb|as| y \verb|bs|, es decir \verb|ma = n = mb|.
 ¿cómo podemos remarcar esto en el caso de pattern matching?; la solución esta en
 usar dotted patterns, para esto prefijamos el caso de pattern matching con un punto
@@ -845,12 +819,9 @@ preocuparnos por dar una definición de función para ese caso.
 
 \subsection{Tipos proposicionales y valores como pruebas}
 
-\comment{No se si es el mejor nombre para la sección}
-
 Al comienzo de la sección anterior se menciona que, considerando a un tipo
 \verb|A| como una proposición podemos decir que esta proposición es
-cierta si podemos construir un valor \verb|a| que tenga tipo \verb|A|. Además
-vale recordar que esto hace que teoría de tipos sea un sistema constructivista.
+cierta si podemos construir un valor \verb|a| que tenga tipo \verb|A|.
 
 Podemos pensar entonces como será la implementación de la proposición \verb|False| (\verb|⊥|) 
 como tipo de dato, la idea es que nunca podamos construirnos un valor de este tipo y
@@ -911,7 +882,7 @@ decir, cualquier cosa es demostrable a partir de una contradicción
 
 \end{verbatim}
 
-Ahora bien, habiendo definido \verb|¬| nos permite definir un tipo de dato
+Ahora bien, habiendo definido \verb|¬| podemos definir un tipo de dato
 que implemente la idea de que una proposición, o bien es cierta, o bien es falsa,
 construyendo la prueba que corresponda. Podemos pensar a este tipo de dato
 como el tipo \verb|Bool| pero con el agregado de que acarrea el valor o prueba
@@ -932,7 +903,7 @@ corresponde con la idea de producto dependiente.\\
 Mostrar la implementación esta fuera de la idea de esta sección;\footnote{Un 
 lector mas interesado puede encontrar la definición en el módulo Data.Product} y
 por esta razón simplemente presentamos la sintaxis necesaria y algunas
-funciones utiles. Considerando los tipos \verb|A : Set| y \verb|B : A → Set| 
+funciones útiles. Considerando los tipos \verb|A : Set| y \verb|B : A → Set| 
 podemos escribir el tipo del producto dependiente como 
 \verb|Σ[ x ∈ A ] B x|\footnote{Otra posibilidad
 es escribir \verb|∃ (λ x → B x)|, que se puede leer 
@@ -979,7 +950,7 @@ data IsEven : Nat → Set where
 Veamos algunos ejemplos para entender este tipo de dato, podemos
 empezar probando que el \verb|0|\footnote{En general usaremos las versiones
 sintácticamente azucaradas, salvo cuando haga falta mencionar su
-construcción original} es par escribiendo una función con tipo
+construcción original} es par, escribiendo una función con tipo
 \verb|IsEven zero|, donde la prueba es utilizar el constructor
 \verb|pz| directamente
 
@@ -993,12 +964,12 @@ zeroIsEven = pz
 pensemos ahora en probar que \verb|2| y \verb|4| son pares teniendo
 en cuenta que \verb|2 = suc (suc zero)| y que \verb|4 = suc (suc 2)|
 de igual manera que con el \verb|0|, nos podemos construir funciones con tipos 
-\verb|IsEven 2| y \verb|IsEven 4|. Enfoquemos nos en probar paso por paso
+\verb|IsEven 2| y \verb|IsEven 4|. Enfoquémonos en probar paso por paso
 que dos es par; tenemos que construir un valor de tipo \verb|IsEven (suc (suc zero))|,
 el constructor \verb|pz| no nos ayuda, pero si nos sirve el constructor \verb|psuc|, ahora
 bien este constructor nos construye algo de tipo \verb|IsEven (suc (suc zero))| siempre
 y cuando podamos suministrarle algo de tipo \verb|IsEven zero|, afortunadamente \verb|pz| ahora
-si nos sirve, por lo tanto la prueba queda
+sí nos sirve, por lo tanto la prueba queda
 
 \begin{verbatim}
 
@@ -1007,7 +978,7 @@ twoIsEven = psuc pz
 
 \end{verbatim}
 
-si pensamos ahora la prueba de que \verb|4| es par, pasa algo parecido; necesitamos
+Si pensamos ahora la prueba de que \verb|4| es par, pasa algo parecido; necesitamos
 construir un valor de tipo \verb|IsEven (suc (suc (suc (suc zero))))|, para esto
 podemos utilizar de nuevo \verb|psuc| para lo cual necesitamos una prueba o valor de
 tipo \verb|IsEven (suc (suc zero))|, por suerte esta es la prueba de que dos es par
@@ -1045,7 +1016,7 @@ proposición)
 
 \end{verbatim}
 
-el primer caso de pattern matching es directo, esto es porque usando el constructor
+El primer caso de pattern matching es directo, esto es porque usando el constructor
 \verb|yes : IsEven zero  → Dec (IsEven zero)| necesitamos una prueba de tipo
 \verb|IsEven zero|, pero esto es utilizar el constructor \verb|pz|
 
@@ -1056,9 +1027,9 @@ isEven zero = yes pz
 
 \end{verbatim}
 
-notar que el siguiente caso de pattern matching es preguntarse que sucede con \verb|suc zero|,
+\noindent notar que el siguiente caso de pattern matching es preguntarse que sucede con \verb|suc zero|,
 es decir \verb|zero| podría considerarse como el caso base para los pares y \verb|suc zero| como
-el caso base para los impares, analicemos esto detenidamente
+el caso base para los impares, analicemos esto detenidamente:
 
 \begin{verbatim}
 
@@ -1066,7 +1037,7 @@ isEven : (n : Nat) → Dec (IsEven n)
 isEven (suc zero) = no (λ ())
 \end{verbatim}
 
-necesitamos construir un valor de tipo \verb|IsEven (suc zero)|, vimos antes que esto es imposible
+Necesitamos construir un valor de tipo \verb|IsEven (suc zero)|, vimos antes que esto es imposible
 por lo tanto usamos el constructor \verb|no| que tiene tipo 
 \verb|¬ IsEven (suc zero) → Dec (IsEven (suc zero))|.
 Necesitamos entonces construir un valor de tipo \verb|¬ IsEven (suc zero)|, pero si recordamos la
@@ -1094,7 +1065,7 @@ bien, usando \verb|with| podemos preguntarnos si \verb|n| es par o no. En caso d
 es interesante notar que el tipo de la prueba es \verb|even : IsEven n|, donde nosotros
 necesitamos construir algo de tipo \verb|IsEven (suc (suc n))|. Por lo tanto usando \verb|psuc|
 y \verb|even| nos construimos algo del tipo buscado y con \verb|yes| terminamos de construir
-la prueba de tipo \verb|Dec (IsEven (suc (suc n)))|. Ahora bien, ¿que tipo tiene la prueba que
+la prueba de tipo \verb|Dec (IsEven (suc (suc n)))|. Ahora bien, ¿qué tipo tiene la prueba que
 necesitamos construir para el caso en el que \verb|n| no es par?; necesitamos una prueba de tipo
 \verb|¬ IsEven (suc (suc n))| y tenemos además una prueba de que \verb|¬even : ¬ IsEven n|.
 
@@ -1109,11 +1080,12 @@ podemos definir una función con tipo \verb|IsEven (suc (suc n)) → ⊥| de la 
 
 \end{verbatim}
 
-notar que como nuestra función toma algo de tipo \verb|IsEven (suc (suc n))| el único
+\noindent notar que como nuestra función toma algo de tipo \verb|IsEven (suc (suc n))| el único
 constructor posible es el \verb|psuc| y por lo tanto el único caso de pattern matching
 es \verb|psuc pn|, donde \verb|pn : IsEven n|. Recordemos que necesitamos construir
 algo de tipo \verb|⊥|, teniendo en cuenta ahora \verb|pn|. Por suerte disponemos de
 \verb|¬even : IsEven n → ⊥|, luego solo nos resta aplicar para obtener el tipo deseado.
+\smallskip
 
 Concluyendo, si juntamos todos los casos tenemos la implementación final de una función
 que dado un natural retorna la prueba de si este es par o no.
@@ -1133,7 +1105,7 @@ isEven (suc (suc n)) with isEven n
 \end{verbatim}
 
 Finalizando con esta sección podemos pensar en dar una prueba de que
-la asociatividad de la suma es valida. Para esto primero vamos a definirnos
+la asociatividad de la suma es válida. Para esto primero vamos a definirnos
 la función \verb|cong|(ruence) para el tipo \verb|Nat|
 
 \begin{verbatim}
@@ -1142,9 +1114,9 @@ cong : {A B : Set} {x y : A} → (f : A → B) → x ≡ y → f x ≡ f y
 
 \end{verbatim}
 
-la implementación de esta función se puede encontrar en el módulo 
-\verb|Relation.Binary.PropositionalEquality| y esta escapa
-a al fin de esta sección presentarla. Por lo tanto, simplemente diremos que 
+La implementación de esta función se puede encontrar en el módulo 
+\verb|Relation.Binary.PropositionalEquality| y escapa
+al fin de esta sección presentarla. Por lo tanto, simplemente diremos que 
 esta función dada una \verb|f : A → B| y una prueba de igualadad \verb|x ≡ y|
 nos construye una prueba de la igualdad \verb|f x ≡ f y|.
 
@@ -1158,7 +1130,7 @@ plusAssoc (suc a) b c = cong suc (plusAssoc a b c)
 
 \end{verbatim}
 
-donde el primer caso de pattern matching es directo de notar que queremos
+\noindent donde el primer caso de pattern matching es directo de notar que queremos
 construir una prueba que tenga tipo \verb|(zero + b) + c ≡ zero + (b + c)|
 pero que al aplicar la definición de la suma en ambos lados obtenemos que
 necesitamos una prueba de tipo \verb|b + c ≡ b + c|, por lo cual podemos

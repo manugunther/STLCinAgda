@@ -32,13 +32,37 @@
  {\ensuremath{\Sigma_{(\tjud{#1}{#2})}\,#3\,#1}
  }
 
+\setbeamercolor{secsubsec}{fg=white,bg=blue!75!black}
+\setbeamercolor{frametitle}{fg=white,bg=blue}
+
+\setbeamertemplate{headline}
+{
+  \leavevmode%
+  \hbox{%
+  \begin{beamercolorbox}[wd=\paperwidth,ht=8.25ex,dp=3.5ex]{secsubsec}%
+    \raggedright
+    \hspace*{2em}%
+    {\sffamily\Large\color{white}\insertsection}%
+    \hspace*{2em}%
+  \end{beamercolorbox}%
+  }%
+}
+
+\setbeamertemplate{footline}{}
+
 \begin{document}
 \beamertemplatenavigationsymbolsempty
 \title{Agda, un lenguaje con tipos dependientes}
 \author{Alejandro Gadea, Emmanuel Gunther}
 \institute{FaMAF, Universidad Nacional de Córdoba}
 \date{14 de Noviembre de 2014}
-\frame{\titlepage}
+
+{
+\setbeamertemplate{headline}{}
+\begin{frame}
+\titlepage
+\end{frame}
+}
 
 \section{Introducción}
 

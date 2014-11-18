@@ -109,7 +109,7 @@
 
  
    
-\title{Agda, un lenguaje con tipos dependientes}
+\title{Programación certificada mediante lenguajes con tipos dependientes}
 \author{Alejandro Gadea, Emmanuel Gunther}
 
  \begin{document}
@@ -1184,7 +1184,7 @@ de tipos a variables $\pi$ tiene algún tipo $\theta$, el cual es único. Normal
 de tipado lo escribimos $\pi \vdash t :: \theta$.
 
 Observemos que al contar solamente con un tipo básico $\odot$ la unicidad del tipado de expresiones
-no podemos asegurarla: Consideremos como ejemplo la expresión "identidad" $\lambda\,x\,.\,x$. Este término representa
+no podemos asegurarla: Consideremos como ejemplo la expresión ``identidad" $\lambda\,x\,.\,x$. Este término representa
 la función que toma un valor y lo retorna. Observemos que podríamos pensar que tiene tipo ($\odot \mapsto \odot$), pero
 también podría ser $(\odot \mapsto \odot) \mapsto (\odot \mapsto \odot)$, con lo cual violaríamos la noción
 de unicidad que queremos tener en nuestros juicios de tipado.
@@ -1809,19 +1809,18 @@ Para inferir el tipo de una aplicación tenemos la siguiente regla:
 Tenemos entonces que para que el término $t₀ \ t₁$ tenga tipo $\theta$ bajo $\pi$ 
 deben existir juicios de tipado para los subtérminos como lo expresa la regla. 
 
-Como hicimos para la abstracción, pensemos en qué casos no podemos inferir un tipo
-para la aplicación:
+Como hicimos para la abstracción, pensemos qué condiciones deben darse para poder inferir
+el tipo de la aplicación:
 
 \begin{itemize}
-  \item[1] Si no puede inferirse tipo para $t_0$ bajo $\pi$.
-  \item[2] Si no puede inferirse tipo para $t_1$ bajo $\pi$.
-  \item[3] Si existe un juicio de tipado para $t_0$ pero con el tipo $⊙$.
-  \item[4] Si existe juicio de tipado para $t_0$ con un tipo $θ_0 ⟼ θ_0'$ 
-           y juicio para $t_1$ con tipo $\theta_1$ pero $\theta_0$ es distinto
-           a $\theta_1$.
+  \item[1] Pueda inferirse un tipo para $t_0$ bajo $\pi$.
+  \item[2] Pueda inferirse un tipo para $t_1$ bajo $\pi$.
+  \item[3] El tipo inferido para $t_0$ no sea $⊙$.
+  \item[4] El tipo de $t_0$ es algún $θ_0 ⟼ θ_0'$ y el de $t_1$
+            es $θ_0$.
 \end{itemize}
 
-Definamos entonces funciones para cuando se cumplan cada una de estas condiciones:
+Definamos funciones para cuando estas cuatro condiciones no se cumplan:
 
 \begin{code}
 

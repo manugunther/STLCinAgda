@@ -1,13 +1,6 @@
 \documentclass[spanish]{article}
 
-%\usepackage[style=numeric,sorting=nyt,sortcites=true,backref=true,autopunct=false,backend=biber]{biblatex}
-%\bibliography{Lambda.bib}
-
-
- % The following packages are needed because unicode
- % is translated (using the next set of packages) to
- % latex commands. You may need more packages if you
- % use more unicode characters:
+% \usepackage[style=numeric,sorting=nyt,sortcites=true,backref=true,autopunct=false,backend=biber]{biblatex}
 
  \usepackage{amssymb}
 
@@ -118,7 +111,6 @@
 
  \begin{document}
 
-
 \maketitle
 
 \tableofcontents
@@ -128,7 +120,6 @@
 
 \section{Introducción}
 
-%% Referencia: Type Theory and Functional Programming Simon Thompson
 En cualquier sistema de computación se pretende obtener programas que satisfagan problemas
 de manera \textbf{correcta}. Si bien esto parece obviamente deseable, es algo difícil de lograr,
 y que en la práctica pocas veces sucede.
@@ -303,7 +294,7 @@ $\tjud{f}{A \rightarrow B}$, se da la siguiente igualdad por definición:
 \subsection{Funciones dependientes}
 
 En la teoría de tipos podemos definir funciones más generales que las usuales, en donde el codominio puede depender
-de valores del dominio. Al tipo de las funciones dependientes se las llama $\Pi-type$ en CITA.
+de valores del dominio. Al tipo de las funciones dependientes se las llama $\Pi-type$ en \cite{hottbook}.
 
 Dado un tipo $\tjud{A}{U}$ y una familia $\tjud{B}{A \rightarrow U}$ podemos definir el tipo de las funciones dependientes
 \begin{align*}
@@ -477,8 +468,8 @@ también la siguiente correspondencia, como lo observamos previamente:
 
 \section{Agda}
 
-En esta sección presentaremos el lenguaje de programación con tipos dependientes \textbf{Agda}
-(referencia a Agda). Estudiaremos brevemente alguna de sus características y la manera
+En esta sección presentaremos el lenguaje de programación con tipos dependientes \textbf{Agda}. 
+Estudiaremos brevemente alguna de sus características y la manera
 de expresar los principales conceptos de la teoría de tipos.
 
 Se pretende que la sección sea autocontenida, salvo algunas
@@ -713,8 +704,7 @@ zip (const a as) (const b bs) = const (a , b) (zip as bs)
 
 Notar que el tipo de los elementos del vector resultante de haber
 aplicado \verb|zip| a dos vectores es \verb|A × B|, este tipo
-se corresponde con el producto cartesiano definido en \comment{referencia
-a la sección 2.5}.
+se corresponde con el producto cartesiano definido en la sección 2.
 
 Podemos pensar ahora qué ocurre si hacemos pattern matching en el 
 argumento \verb|n : Nat| en el segundo caso
@@ -901,7 +891,7 @@ data Dec (P : Set) : Set where
 \end{verbatim}
 
 Por otro lado, podemos presentar además la noción de cuantificador existencial,
-la cual como mencionamos antes, en la sección \comment{alguna referencia acá} se
+la cual como mencionamos antes, en la sección 2 se
 corresponde con la idea de producto dependiente.\\
 
 Mostrar la implementación esta fuera de la idea de esta sección;\footnote{Un 
@@ -1946,5 +1936,22 @@ de por qué no se puede tipar.
 
 Decimos que esta implementación está certificada, ya que tenemos una prueba formal de que el resultado
 de nuestro programa es el correcto.
+
+\begin{thebibliography}{9}
+
+
+\bibitem{hottbook} The {Univalent Foundations Program}, \emph{Homotopy Type Theory: Univalent Foundations of Mathematics}, 
+The {Univalent Foundations Program}, \url{http://homotopytypetheory.org/book},
+2013.
+
+\bibitem{ttfp} Simon Thompson, \emph{Type Theory and Functional Programming}, 
+Addison-Wesley, 1991.
+
+\bibitem{dependentlytyped}
+Ulf Norell, \emph{Dependently typed programming in Agda}, 2008.
+
+
+\end{thebibliography}
+
 
  \end{document}

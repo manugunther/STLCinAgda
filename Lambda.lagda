@@ -1,5 +1,9 @@
 \documentclass[spanish]{article}
 
+%\usepackage[style=numeric,sorting=nyt,sortcites=true,backref=true,autopunct=false,backend=biber]{biblatex}
+%\bibliography{Lambda.bib}
+
+
  % The following packages are needed because unicode
  % is translated (using the next set of packages) to
  % latex commands. You may need more packages if you
@@ -29,7 +33,7 @@
   \renewcommand{\contentsname}%
     {Indice}%
 }
- 
+
  % This handles the translation of unicode to latex:
 
  \usepackage{ucs}
@@ -739,7 +743,7 @@ zip {n = (suc n)} (const {.n} a as) (const {.n} b bs) = ...
 
 \end{verbatim}
 
-Como se menciona en \textit{citar Dependently Typed Programming in Agda}:
+Como se menciona en \cite{dependentlytyped}:
 
 La regla para saber si un argumento debe tener prefijado el punto es: \textit{Si existe
 un único valor para un argumento, este debe estar prefijado por el punto}.
